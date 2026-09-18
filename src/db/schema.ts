@@ -47,17 +47,6 @@ export const leaders = sqliteTable(
   (t) => [primaryKey({ columns: [t.studyId, t.login] })],
 )
 
-export const participants = sqliteTable(
-  'participants',
-  {
-    cohortId: text('cohort_id')
-      .notNull()
-      .references(() => cohorts.id),
-    login: text('login').notNull(),
-  },
-  (t) => [primaryKey({ columns: [t.cohortId, t.login] })],
-)
-
 export const surveys = sqliteTable('surveys', {
   id: text('id').primaryKey(), // 'blog-2-final'
   cohortId: text('cohort_id')
