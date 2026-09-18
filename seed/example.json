@@ -1,0 +1,25 @@
+{
+  "study": { "id": "blog", "name": "블로그 스터디" },
+  "cohort": { "id": "blog-2", "name": "2기" },
+  "leaders": ["DaleSeo"],
+  "participants": ["DaleSeo", "octocat"],
+  "survey": {
+    "id": "blog-2-final",
+    "title": "블로그 스터디 2기 최종 피드백",
+    "description": "10주 동안 고생 많으셨습니다. 다음 기수를 더 낫게 만들기 위해 솔직한 의견을 들려주세요.",
+    "anonymous": true,
+    "closesAt": "2026-10-05T14:59:59.000Z",
+    "questions": [
+      { "type": "scale", "label": "스터디에 전반적으로 만족하셨나요?" },
+      { "type": "scale", "label": "매주 글을 쓰는 부담은 적절했나요?" },
+      { "type": "scale", "label": "다른 분께 이 스터디를 추천하시겠어요?" },
+      {
+        "type": "choice",
+        "label": "가장 도움이 된 것은 무엇이었나요?",
+        "options": ["매주 마감이 있다는 것", "다른 참가자의 글을 읽는 것", "댓글과 반응", "베스트 글 선정"]
+      },
+      { "type": "long", "label": "다음 기수에서 바꾸면 좋을 점이 있다면 적어주세요.", "required": false },
+      { "type": "long", "label": "그 밖에 하고 싶은 말씀이 있다면 자유롭게 적어주세요.", "required": false }
+    ]
+  }
+}
