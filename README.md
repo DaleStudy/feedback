@@ -3,7 +3,7 @@
 스터디 참가자 피드백을 한곳에 모으는 사이트. https://feedback.dalestudy.com
 
 스터디 리더마다 다른 도구로 피드백을 받다 보니 지난 기수 피드백을 찾기도, 기수 간 비교도 어려웠다.
-GitHub 로그인으로 누가 답할 수 있는지만 확인하고, 응답은 익명으로 D1 에 쌓는다.
+GitHub 로그인으로 중복 응답만 막고, 응답은 익명으로 D1 에 쌓는다.
 
 ## 구조
 
@@ -13,11 +13,13 @@ GitHub 로그인으로 누가 답할 수 있는지만 확인하고, 응답은 �
 - 로그인: DaleStudy GitHub App 의 user-to-server OAuth
 
 ```
-studies ─┬─ cohorts ─┬─ participants (cohort_id, login)   ← 설문에 답할 수 있는 사람
-         │           └─ surveys ─ questions
-         │                   └─ responses ─ answers
-         └─ leaders (study_id, login)                     ← 결과를 볼 수 있는 사람
+studies ─┬─ cohorts ─ surveys ─ questions
+         │                 └─ responses ─ answers
+         └─ leaders (study_id, login)      ← 결과를 볼 수 있는 사람
 ```
+
+참가자 명단은 두지 않는다. 설문 링크는 해당 스터디 채널에만 공유되고, 답하려면 GitHub 로그인이 필요하며,
+같은 사람의 중복 응답은 막히므로 명단이 주는 추가 안전이 Discord↔GitHub 매핑을 유지하는 비용보다 작다.
 
 익명 설문의 `responses.respondent_key` 는 `HMAC(HMAC_SECRET, surveyId:userId)` 다.
 같은 사람의 중복 응답만 막고, 누가 답했는지는 리더도 서버도 복원할 수 없다. 실명 설문이면 GitHub login 을 그대로 쓴다.
@@ -52,7 +54,7 @@ bun run db:seed:local seed/blog-2-final.json
 bun run db:seed:remote seed/blog-2-final.json
 ```
 
-스터디·기수·리더·참가자는 이미 있으면 건너뛰고, 설문은 같은 id 가 있으면 실패한다.
+스터디·기수·리더는 이미 있으면 건너뛰고, 설문은 같은 id 가 있으면 실패한다.
 질문 유형은 `scale`(1~5), `short`, `long`, `choice`(`options` 필요) 네 가지.
 
 ### 스키마 바꾸기

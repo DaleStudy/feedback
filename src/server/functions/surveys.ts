@@ -3,17 +3,8 @@ import { notFound } from '@tanstack/react-router'
 import { env } from 'cloudflare:workers'
 import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import { getDb } from '@/db'
-import {
-  answers,
-  cohorts,
-  leaders,
-  participants,
-  questions,
-  responses,
-  studies,
-  surveys,
-} from '@/db/schema'
-import { isLeaderOfCohort, isParticipant } from '../access'
+import { answers, cohorts, leaders, questions, responses, studies, surveys } from '@/db/schema'
+import { isLeaderOfCohort } from '../access'
 import { authMiddleware } from '../auth/middleware'
 import { anonymousRespondentKey } from '../respondent-key'
 
@@ -25,7 +16,8 @@ async function respondentKeyFor(survey: { id: string; anonymous: boolean }, user
   return survey.anonymous ? anonymousRespondentKey(env.HMAC_SECRET, survey.id, user.id) : user.login
 }
 
-// 내가 답할 설문과 내가 결과를 볼 설문
+// 답할 수 있는 설문 전부와 내가 결과를 볼 설문.
+// 참가자 명단은 두지 않는다. 링크는 스터디 채널에만 공유되고, 로그인 + 중복 방지로 충분하다.
 export const listMySurveys = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
   .handler(async ({ context: { user } }) => {
@@ -45,7 +37,6 @@ export const listMySurveys = createServerFn({ method: 'GET' })
       .from(surveys)
       .innerJoin(cohorts, eq(cohorts.id, surveys.cohortId))
       .innerJoin(studies, eq(studies.id, cohorts.studyId))
-      .innerJoin(participants, and(eq(participants.cohortId, cohorts.id), eq(participants.login, user.login)))
       .orderBy(desc(surveys.createdAt))
 
     const toReview = await db
@@ -84,11 +75,7 @@ export const getSurvey = createServerFn({ method: 'GET' })
     const survey = await db.query.surveys.findFirst({ where: eq(surveys.id, data.surveyId) })
     if (!survey) throw notFound()
 
-    const [participant, leader] = await Promise.all([
-      isParticipant(db, survey.cohortId, user.login),
-      isLeaderOfCohort(db, survey.cohortId, user.login),
-    ])
-    if (!participant && !leader) throw notFound()
+    const leader = await isLeaderOfCohort(db, survey.cohortId, user.login)
 
     const surveyQuestions = await db.query.questions.findMany({
       where: eq(questions.surveyId, survey.id),
@@ -104,7 +91,6 @@ export const getSurvey = createServerFn({ method: 'GET' })
       ...survey,
       closed: isClosed(survey.closesAt),
       questions: surveyQuestions,
-      canAnswer: participant,
       canReview: leader,
       answered: Boolean(existing),
     }
@@ -118,7 +104,6 @@ export const submitResponse = createServerFn({ method: 'POST' })
     const survey = await db.query.surveys.findFirst({ where: eq(surveys.id, data.surveyId) })
     if (!survey) throw notFound()
     if (isClosed(survey.closesAt)) throw new Error('마감된 설문입니다')
-    if (!(await isParticipant(db, survey.cohortId, user.login))) throw notFound()
 
     const surveyQuestions = await db.query.questions.findMany({ where: eq(questions.surveyId, survey.id) })
     const byId = new Map(surveyQuestions.map((q) => [q.id, q]))

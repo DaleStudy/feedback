@@ -61,11 +61,11 @@ function SurveyPage() {
     )
   }
 
-  if (survey.closed || !survey.canAnswer) {
+  if (survey.closed) {
     return (
       <VStack align="stretch" gap="24">
         {header}
-        <Text tone="neutral">{survey.closed ? '마감된 설문입니다.' : '이 설문의 응답 대상이 아닙니다.'}</Text>
+        <Text tone="neutral">마감된 설문입니다.</Text>
         <BackLinks canReview={survey.canReview} surveyId={survey.id} />
       </VStack>
     )

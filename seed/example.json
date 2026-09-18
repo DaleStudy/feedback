@@ -2,7 +2,6 @@
   "study": { "id": "blog", "name": "블로그 스터디" },
   "cohort": { "id": "blog-2", "name": "2기" },
   "leaders": ["DaleSeo"],
-  "participants": ["DaleSeo", "octocat"],
   "survey": {
     "id": "blog-2-final",
     "title": "블로그 스터디 2기 최종 피드백",
