@@ -7,12 +7,12 @@
   "main": "@tanstack/react-start/server-entry",
   "observability": { "enabled": true },
   "upload_source_maps": true,
+  "routes": [{ "pattern": "feedback.dalestudy.com", "custom_domain": true }],
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "feedback",
-      // wrangler d1 create feedback --location apac 실행 후 발급된 ID로 교체
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "6bbc1200-439a-42a5-8447-4e529f8a3537",
       "migrations_dir": "drizzle"
     }
   ]
