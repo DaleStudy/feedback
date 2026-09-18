@@ -65,15 +65,16 @@ bun run db:migrate:local
 
 ## 배포
 
-처음 한 번:
+`main` 에 push 하면 Cloudflare Workers Builds 가 `bun run build` → `npx wrangler deploy` 를 실행한다.
+다른 브랜치를 push 하면 프리뷰 빌드가 돈다. `bun run deploy` 는 자동 배포가 안 될 때의 수동 fallback.
 
-```bash
-bunx wrangler d1 create feedback --location apac   # 나온 database_id 를 wrangler.jsonc 에
-bunx wrangler secret put GITHUB_CLIENT_ID
-bunx wrangler secret put GITHUB_CLIENT_SECRET
-bunx wrangler secret put HMAC_SECRET
-bun run db:migrate:remote
-```
+이미 설정된 것 (다시 만들 필요 없음):
 
-이후는 Cloudflare 대시보드의 Workers Builds 로 `main` push 시 자동 배포. `bun run deploy` 는 수동 fallback.
-GitHub App 의 Callback URL 에 `https://feedback.dalestudy.com/auth/callback` 도 등록한다.
+- D1 `feedback` (APAC) — id 는 `wrangler.jsonc` 에 있음
+- 시크릿 `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `HMAC_SECRET`
+- 커스텀 도메인 `feedback.dalestudy.com` (`wrangler.jsonc` 의 `routes`)
+- Workers Builds ↔ `DaleStudy/feedback` 연결. 빌드 변수 `BUN_VERSION=1.4.0` (빌드 이미지 기본 bun 1.2.15 는 lockfile v2 를 못 읽는다. 로컬 bun 을 올리면 같이 올린다)
+- GitHub App Callback URL: `http://localhost:3000/auth/callback`, `https://feedback.dalestudy.com/auth/callback`
+
+`HMAC_SECRET` 은 바꾸면 기존 익명 응답자의 중복 방지 키가 달라지므로 교체하지 않는다.
+스키마가 바뀌면 배포 전에 `bun run db:migrate:remote` 를 직접 실행한다.
