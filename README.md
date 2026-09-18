@@ -73,7 +73,7 @@ bun run db:migrate:local
 - D1 `feedback` (APAC) — id 는 `wrangler.jsonc` 에 있음
 - 시크릿 `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `HMAC_SECRET`
 - 커스텀 도메인 `feedback.dalestudy.com` (`wrangler.jsonc` 의 `routes`)
-- Workers Builds ↔ `DaleStudy/feedback` 연결
+- Workers Builds ↔ `DaleStudy/feedback` 연결. 빌드 변수 `BUN_VERSION=1.4.0` (빌드 이미지 기본 bun 1.2.15 는 lockfile v2 를 못 읽는다. 로컬 bun 을 올리면 같이 올린다)
 - GitHub App Callback URL: `http://localhost:3000/auth/callback`, `https://feedback.dalestudy.com/auth/callback`
 
 `HMAC_SECRET` 은 바꾸면 기존 익명 응답자의 중복 방지 키가 달라지므로 교체하지 않는다.
