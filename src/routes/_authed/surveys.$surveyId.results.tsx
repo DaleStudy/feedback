@@ -1,13 +1,12 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { Heading, Text, VStack } from 'daleui'
+import { QuestionResult } from '@/questions/registry'
 import { getSurveyResults } from '@/server/functions/surveys'
 
 export const Route = createFileRoute('/_authed/surveys/$surveyId/results')({
   loader: ({ params }) => getSurveyResults({ data: { surveyId: params.surveyId } }),
   component: ResultsPage,
 })
-
-const SCALE = ['1', '2', '3', '4', '5']
 
 function ResultsPage() {
   const result = Route.useLoaderData()
@@ -32,22 +31,7 @@ function ResultsPage() {
             {q.label}
           </Heading>
           <div className="mt-3">
-            {q.type === 'scale' && <Distribution values={q.values} options={SCALE} showAverage />}
-            {q.type === 'choice' && <Distribution values={q.values} options={q.options ?? []} />}
-            {(q.type === 'short' || q.type === 'long') &&
-              (q.values.length === 0 ? (
-                <Text size="sm" tone="neutral" muted>
-                  응답 없음
-                </Text>
-              ) : (
-                <ul className="space-y-2">
-                  {q.values.map((v, i) => (
-                    <li key={i} className="whitespace-pre-wrap rounded border border-gray-200 bg-white px-3 py-2 text-sm">
-                      {v}
-                    </li>
-                  ))}
-                </ul>
-              ))}
+            <QuestionResult question={q} values={q.values} />
           </div>
         </section>
       ))}
@@ -59,35 +43,3 @@ function ResultsPage() {
   )
 }
 
-function Distribution({ values, options, showAverage }: { values: string[]; options: string[]; showAverage?: boolean }) {
-  const counts = new Map(options.map((o) => [o, 0]))
-  for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1)
-  const max = Math.max(1, ...counts.values())
-  const average = showAverage && values.length ? values.reduce((sum, v) => sum + Number(v), 0) / values.length : null
-
-  return (
-    <div>
-      {average !== null && (
-        <Text size="sm" weight="bold" className="mb-2">
-          평균 {average.toFixed(1)}
-        </Text>
-      )}
-      <table className="w-full text-sm">
-        <tbody>
-          {options.map((o) => {
-            const n = counts.get(o) ?? 0
-            return (
-              <tr key={o}>
-                <td className="w-32 py-1 pr-3 align-middle">{o}</td>
-                <td className="py-1">
-                  <div className="h-4 rounded bg-blue-500" style={{ width: `${(n / max) * 100}%`, minWidth: n ? 4 : 0 }} />
-                </td>
-                <td className="w-10 py-1 pl-3 text-right tabular-nums text-gray-500">{n}</td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
-  )
-}

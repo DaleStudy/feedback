@@ -59,6 +59,10 @@ export const surveys = sqliteTable('surveys', {
   createdAt: text('created_at').notNull(),
 })
 
+export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue }
+export type QuestionConfig = { [key: string]: JsonValue }
+
+// 유형을 추가하려면 여기에 이름을 넣고 src/questions/types/ 에 정의 파일을 만들어 registry 에 등록한다.
 export const questionTypes = ['scale', 'short', 'long', 'choice'] as const
 export type QuestionType = (typeof questionTypes)[number]
 
@@ -68,10 +72,14 @@ export const questions = sqliteTable('questions', {
     .notNull()
     .references(() => surveys.id, { onDelete: 'cascade' }),
   position: integer('position').notNull(),
+  // 스터디·기수를 가로질러 같은 문항을 찾는 키. 공통 문항(src/questions/common.ts)만 값이 있다.
+  key: text('key'),
   type: text('type', { enum: questionTypes }).notNull(),
   label: text('label').notNull(),
   required: integer('required', { mode: 'boolean' }).notNull().default(true),
-  options: text('options', { mode: 'json' }).$type<string[]>(), // choice 전용
+  // 유형별 설정. 모양은 각 유형 정의의 defaultConfig 가 정한다 (scale: min/max/라벨, choice: options).
+  // unknown 대신 JsonValue 로 두는 이유: 서버 함수 반환 타입이 직렬화 가능해야 라우트의 loader 타입이 추론된다.
+  config: text('config', { mode: 'json' }).$type<QuestionConfig>(),
 })
 
 export const responses = sqliteTable(

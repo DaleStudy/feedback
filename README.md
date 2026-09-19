@@ -47,7 +47,7 @@ GitHub App 설정의 Callback URL 에 `http://localhost:3000/auth/callback` 이 
 
 ### 설문 만들기
 
-관리 화면은 아직 없다. `seed/example.json` 형식으로 JSON 을 쓰고 넣는다.
+관리 화면은 아직 없다. `seed/` 에 JSON 을 쓰고 넣는다. `seed/blog01-final.json` 이 실제 예, `seed/example.json` 이 형식 설명이다.
 
 ```bash
 bun run db:seed:local seed/blog01-final.json
@@ -55,7 +55,16 @@ bun run db:seed:remote seed/blog01-final.json
 ```
 
 스터디·기수·리더는 이미 있으면 건너뛰고, 설문은 같은 id 가 있으면 실패한다.
-질문 유형은 `scale`(1~5), `short`, `long`, `choice`(`options` 필요) 네 가지.
+
+문항은 두 종류다.
+
+- `{ "common": "goal_achieved" }` — `src/questions/common.ts` 의 **공통 문항**. 모든 스터디가 같은 `key` 로 묻는다.
+  문구 속 `{activity}`, `{artifact}` 는 설문의 `vars` 로 채운다 (블로그: "매주 글을 쓰는 데" / "글", 리트코드: "매주 문제를 푸는 데" / "풀이").
+  기수·스터디 간 비교는 이 `key` 로 한다. 공통 문항 문구를 고치면 이전 기수와 비교가 깨지므로 신중히.
+- `{ "type": "long", "label": "…" }` — 이 설문만의 문항. `key` 는 비어 있다.
+
+둘 다 `required`(기본 true)와 `config` 를 줄 수 있다. 유형은 `scale`, `short`, `long`, `choice` 네 가지.
+각 유형의 저장값·검증·`config`·공통 문항 목록·유형 추가 절차는 [docs/questions.md](docs/questions.md) 에 있다.
 
 ### 스키마 바꾸기
 

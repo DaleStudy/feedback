@@ -15,6 +15,20 @@
       "when": 1789697163064,
       "tag": "0001_drop_participants",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789779175586,
+      "tag": "0002_add_question_key_and_config",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1789779175890,
+      "tag": "0003_drop_question_options",
+      "breakpoints": true
     }
   ]
 }
