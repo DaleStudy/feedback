@@ -63,22 +63,8 @@ bun run db:seed:remote seed/blog01-final.json
   기수·스터디 간 비교는 이 `key` 로 한다. 공통 문항 문구를 고치면 이전 기수와 비교가 깨지므로 신중히.
 - `{ "type": "long", "label": "…" }` — 이 설문만의 문항. `key` 는 비어 있다.
 
-둘 다 `required`(기본 true)와 `config` 를 줄 수 있다. `config` 의 모양은 유형이 정한다.
-
-| type | 뜻 | config |
-|---|---|---|
-| `scale` | 숫자 척도 | `min`(1), `max`(5), `minLabel`("전혀 아니다"), `maxLabel`("매우 그렇다") |
-| `short` | 한 줄 | — |
-| `long` | 여러 줄 | — |
-| `choice` | 단일 선택 | `options: string[]` (필수) |
-
-### 문항 유형 추가하기
-
-1. `src/db/schema.ts` 의 `questionTypes` 에 이름을 넣는다.
-2. `src/questions/types/<이름>.tsx` 에 `QuestionTypeDef` 를 만든다 — `defaultConfig`(설정 스키마 겸 기본값), `validate`, `Input`(응답 화면), `Result`(결과 화면).
-3. `src/questions/registry.tsx` 에 등록한다. 빠지면 타입 오류가 난다.
-
-서버 함수와 라우트는 registry 만 보므로 다른 곳은 고칠 게 없다.
+둘 다 `required`(기본 true)와 `config` 를 줄 수 있다. 유형은 `scale`, `short`, `long`, `choice` 네 가지.
+각 유형의 저장값·검증·`config`·공통 문항 목록·유형 추가 절차는 [docs/questions.md](docs/questions.md) 에 있다.
 
 ### 스키마 바꾸기
 
