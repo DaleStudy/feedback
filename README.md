@@ -50,8 +50,8 @@ GitHub App 설정의 Callback URL 에 `http://localhost:3000/auth/callback` 이 
 관리 화면은 아직 없다. `seed/example.json` 형식으로 JSON 을 쓰고 넣는다.
 
 ```bash
-bun run db:seed:local seed/blog-2-final.json
-bun run db:seed:remote seed/blog-2-final.json
+bun run db:seed:local seed/blog01-final.json
+bun run db:seed:remote seed/blog01-final.json
 ```
 
 스터디·기수·리더는 이미 있으면 건너뛰고, 설문은 같은 id 가 있으면 실패한다.

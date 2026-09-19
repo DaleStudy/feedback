@@ -28,7 +28,7 @@ export const studies = sqliteTable('studies', {
 })
 
 export const cohorts = sqliteTable('cohorts', {
-  id: text('id').primaryKey(), // 'blog-2'
+  id: text('id').primaryKey(), // 'blog01' — GitHub 팀 슬러그(leetcode08)와 같은 표기
   studyId: text('study_id')
     .notNull()
     .references(() => studies.id),
@@ -48,7 +48,7 @@ export const leaders = sqliteTable(
 )
 
 export const surveys = sqliteTable('surveys', {
-  id: text('id').primaryKey(), // 'blog-2-final'
+  id: text('id').primaryKey(), // 'blog01-final'
   cohortId: text('cohort_id')
     .notNull()
     .references(() => cohorts.id),
