@@ -47,7 +47,7 @@ GitHub App 설정의 Callback URL 에 `http://localhost:3000/auth/callback` 이 
 
 ### 설문 만들기
 
-관리 화면은 아직 없다. `seed/example.json` 형식으로 JSON 을 쓰고 넣는다.
+관리 화면은 아직 없다. `seed/` 에 JSON 을 쓰고 넣는다. `seed/blog01-final.json` 이 실제 예, `seed/example.json` 이 형식 설명이다.
 
 ```bash
 bun run db:seed:local seed/blog01-final.json
@@ -55,7 +55,30 @@ bun run db:seed:remote seed/blog01-final.json
 ```
 
 스터디·기수·리더는 이미 있으면 건너뛰고, 설문은 같은 id 가 있으면 실패한다.
-질문 유형은 `scale`(1~5), `short`, `long`, `choice`(`options` 필요) 네 가지.
+
+문항은 두 종류다.
+
+- `{ "common": "goal_achieved" }` — `src/questions/common.ts` 의 **공통 문항**. 모든 스터디가 같은 `key` 로 묻는다.
+  문구 속 `{activity}`, `{artifact}` 는 설문의 `vars` 로 채운다 (블로그: "매주 글을 쓰는 데" / "글", 리트코드: "매주 문제를 푸는 데" / "풀이").
+  기수·스터디 간 비교는 이 `key` 로 한다. 공통 문항 문구를 고치면 이전 기수와 비교가 깨지므로 신중히.
+- `{ "type": "long", "label": "…" }` — 이 설문만의 문항. `key` 는 비어 있다.
+
+둘 다 `required`(기본 true)와 `config` 를 줄 수 있다. `config` 의 모양은 유형이 정한다.
+
+| type | 뜻 | config |
+|---|---|---|
+| `scale` | 숫자 척도 | `min`(1), `max`(5), `minLabel`("전혀 아니다"), `maxLabel`("매우 그렇다") |
+| `short` | 한 줄 | — |
+| `long` | 여러 줄 | — |
+| `choice` | 단일 선택 | `options: string[]` (필수) |
+
+### 문항 유형 추가하기
+
+1. `src/db/schema.ts` 의 `questionTypes` 에 이름을 넣는다.
+2. `src/questions/types/<이름>.tsx` 에 `QuestionTypeDef` 를 만든다 — `defaultConfig`(설정 스키마 겸 기본값), `validate`, `Input`(응답 화면), `Result`(결과 화면).
+3. `src/questions/registry.tsx` 에 등록한다. 빠지면 타입 오류가 난다.
+
+서버 함수와 라우트는 registry 만 보므로 다른 곳은 고칠 게 없다.
 
 ### 스키마 바꾸기
 

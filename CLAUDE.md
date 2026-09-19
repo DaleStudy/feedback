@@ -21,6 +21,9 @@ bunx drizzle-kit generate --name <desc>   # 스키마 변경 후 마이그레이
 - 서버 함수는 `createServerFn` + `.validator()` + `.handler()`. 바인딩은 `import { env } from 'cloudflare:workers'` — `env.DB`, 시크릿은 `env.GITHUB_CLIENT_ID` 등 (`src/env.d.ts` 에서 타입 보강).
 - 세션은 D1 `sessions` 테이블의 opaque id 를 `__Host-session` HttpOnly 쿠키에 담는다. 30일.
 - 익명 설문 응답자 키는 `src/server/respondent-key.ts` 의 HMAC. `HMAC_SECRET` 이 바뀌면 기존 응답자의 중복 방지가 풀리므로 바꾸지 않는다.
+- 문항 유형은 `src/questions/registry.tsx` 에 모여 있다. 검증(`validateAnswer`)·응답 UI(`QuestionInput`)·결과 UI(`QuestionResult`)는 전부 registry 를 거친다. 유형별 `switch` 를 다른 곳에 만들지 않는다.
+- 공통 문항은 `src/questions/common.ts`. `questions.key` 로 기수·스터디를 가로질러 같은 문항을 찾는다. 문구 변경은 곧 비교 단절이다.
+- 설문 정의는 `seed/*.json` → `scripts/seed-survey.ts`. 관리 UI 없음.
 
 ## Gotchas
 
