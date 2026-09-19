@@ -2,7 +2,7 @@
 
 스터디 참가자 피드백을 한곳에 모으는 사이트. https://feedback.dalestudy.com
 
-스터디 리더마다 다른 도구로 피드백을 받다 보니 지난 기수 피드백을 찾기도, 기수 간 비교도 어려웠다.
+스터디·프로젝트(dalestudy.com/programs 의 **프로그램**) 리더마다 다른 도구로 피드백을 받다 보니 지난 기수 피드백을 찾기도, 기수 간 비교도 어려웠다.
 GitHub 로그인으로 중복 응답만 막고, 응답은 익명으로 D1 에 쌓는다.
 
 ## 구조
@@ -13,12 +13,12 @@ GitHub 로그인으로 중복 응답만 막고, 응답은 익명으로 D1 에 �
 - 로그인: DaleStudy GitHub App 의 user-to-server OAuth
 
 ```
-studies ─┬─ cohorts ─ surveys ─ questions
-         │                 └─ responses ─ answers
-         └─ leaders (study_id, login)      ← 결과를 볼 수 있는 사람
+programs ─┬─ cohorts ─ surveys ─ questions       cohort: 기수제면 '1기', 상시면 '2026 하반기'
+          │                 └─ responses ─ answers
+          └─ leaders (program_id, login)    ← 결과를 볼 수 있는 사람
 ```
 
-참가자 명단은 두지 않는다. 설문 링크는 해당 스터디 채널에만 공유되고, 답하려면 GitHub 로그인이 필요하며,
+참가자 명단은 두지 않는다. 설문 링크는 해당 프로그램 채널에만 공유되고, 답하려면 GitHub 로그인이 필요하며,
 같은 사람의 중복 응답은 막히므로 명단이 주는 추가 안전이 Discord↔GitHub 매핑을 유지하는 비용보다 작다.
 
 익명 설문의 `responses.respondent_key` 는 `HMAC(HMAC_SECRET, surveyId:userId)` 다.
@@ -54,13 +54,13 @@ bun run db:seed:local seed/blog01-final.json
 bun run db:seed:remote seed/blog01-final.json
 ```
 
-스터디·기수·리더는 이미 있으면 건너뛰고, 설문은 같은 id 가 있으면 실패한다.
+프로그램·기수·리더는 이미 있으면 건너뛰고, 설문은 같은 id 가 있으면 실패한다.
 
 문항은 두 종류다.
 
-- `{ "common": "goal_achieved" }` — `src/questions/common.ts` 의 **공통 문항**. 모든 스터디가 같은 `key` 로 묻는다.
-  문구 속 `{activity}`, `{artifact}` 는 설문의 `vars` 로 채운다 (블로그: "매주 글을 쓰는 데" / "글", 리트코드: "매주 문제를 푸는 데" / "풀이").
-  기수·스터디 간 비교는 이 `key` 로 한다. 공통 문항 문구를 고치면 이전 기수와 비교가 깨지므로 신중히.
+- `{ "common": "goal_achieved" }` — `src/questions/common.ts` 의 **공통 문항**. 모든 프로그램이 같은 `key` 로 묻는다.
+  문구 속 `{program}`, `{activity}` 같은 자리표시자는 설문의 `vars` 로 채운다. 프로그램별 값은 docs/questions.md 참고.
+  기수·프로그램 간 비교는 이 `key` 로 한다. 공통 문항 문구를 고치면 이전 기수와 비교가 깨지므로 신중히.
 - `{ "type": "long", "label": "…" }` — 이 설문만의 문항. `key` 는 비어 있다.
 
 둘 다 `required`(기본 true)와 `config` 를 줄 수 있다. 유형은 `scale`, `short`, `long`, `choice` 네 가지.

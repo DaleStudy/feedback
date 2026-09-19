@@ -13,9 +13,9 @@ function HomePage() {
   if (!mine) {
     return (
       <VStack align="stretch" gap="16">
-        <Heading level={1}>스터디 피드백</Heading>
+        <Heading level={1}>피드백</Heading>
         <Text tone="neutral">
-          달레 스터디의 모든 스터디 피드백을 한곳에 모읍니다. 참가 중인 스터디의 설문을 보려면 GitHub로
+          달레 스터디의 스터디와 프로젝트 피드백을 한곳에 모읍니다. 참여 중인 프로그램의 설문을 보려면 GitHub로
           로그인하세요.
         </Text>
         <a href="/login" className="inline-block w-fit rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white">
@@ -46,7 +46,7 @@ function HomePage() {
                     </Link>
                   </Card.Title>
                   <Card.Description>
-                    {s.studyName} {s.cohortName} · {s.anonymous ? '익명' : '실명'}
+                    {s.programName} {s.cohortName} · {s.anonymous ? '익명' : '실명'}
                     {s.closesAt ? ` · ${new Date(s.closesAt).toLocaleDateString('ko-KR')} 마감` : ''}
                   </Card.Description>
                   {s.answered && <Tag tone="success">응답 완료</Tag>}
@@ -73,7 +73,7 @@ function HomePage() {
                     </Link>
                   </Card.Title>
                   <Card.Description>
-                    {s.studyName} {s.cohortName} · {s.anonymous ? '익명' : '실명'}
+                    {s.programName} {s.cohortName} · {s.anonymous ? '익명' : '실명'}
                   </Card.Description>
                 </Card.Body>
               </Card>

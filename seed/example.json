@@ -1,32 +1,71 @@
 {
-  "study": { "id": "leetcode", "name": "리트코드 스터디" },
-  "cohort": { "id": "leetcode09", "name": "9기" },
-  "leaders": ["DaleSeo"],
+  "program": {
+    "id": "leetcode",
+    "name": "리트코드 스터디"
+  },
+  "cohort": {
+    "id": "leetcode09",
+    "name": "9기"
+  },
+  "leaders": [
+    "DaleSeo"
+  ],
   "survey": {
     "id": "leetcode09-final",
     "title": "리트코드 스터디 9기 돌아보기",
-    "description": "공통 문항은 vars 로 문구를 채우고, 이 스터디만의 문항은 type/label 로 직접 쓴다.",
+    "description": "공통 문항은 vars 로 문구를 채우고, 이 프로그램만의 문항은 type/label 로 직접 쓴다.",
     "anonymous": true,
     "closesAt": "2027-01-31T14:59:59.000Z",
-    "vars": { "activity": "매주 문제를 푸는 데", "artifact": "풀이" },
+    "vars": {
+      "program": "스터디",
+      "period": "이번 기수에서",
+      "activity": "매주 문제를 푸는 데",
+      "artifact": "풀이",
+      "redo": "같은 스터디를 다시 한다면",
+      "next": "다음 기수에 다시"
+    },
     "questions": [
-      { "common": "goal_achieved" },
-      { "common": "effort_satisfied" },
-      { "common": "gave_back" },
-      { "common": "do_differently" },
-      { "common": "community_help" },
+      {
+        "common": "goal_achieved"
+      },
+      {
+        "common": "effort_satisfied"
+      },
+      {
+        "common": "gave_back"
+      },
+      {
+        "common": "do_differently"
+      },
+      {
+        "common": "community_help"
+      },
       {
         "type": "scale",
         "label": "문제 난이도는 어땠나요?",
-        "config": { "minLabel": "너무 쉬웠다", "maxLabel": "너무 어려웠다" }
+        "config": {
+          "minLabel": "너무 쉬웠다",
+          "maxLabel": "너무 어려웠다"
+        }
       },
       {
         "type": "choice",
         "label": "가장 도움이 된 것은 무엇이었나요?",
-        "config": { "options": ["매주 마감", "다른 참가자의 풀이", "코드 리뷰", "리더보드"] }
+        "config": {
+          "options": [
+            "매주 마감",
+            "다른 참가자의 풀이",
+            "코드 리뷰",
+            "리더보드"
+          ]
+        }
       },
-      { "common": "rejoin" },
-      { "common": "dropout" }
+      {
+        "common": "rejoin"
+      },
+      {
+        "common": "dropout"
+      }
     ]
   }
 }
