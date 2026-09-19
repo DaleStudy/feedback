@@ -1,7 +1,7 @@
 // 설문 정의 JSON 을 SQL 로 바꿔 D1 에 넣는다.
 //   bun scripts/seed-survey.ts seed/blog01-final.json            # 로컬
 //   bun scripts/seed-survey.ts seed/blog01-final.json --remote   # 프로덕션
-// 스터디·기수·리더는 있으면 건너뛰고, 설문은 같은 id 가 이미 있으면 실패한다.
+// 프로그램·기수·리더는 있으면 건너뛰고, 설문은 같은 id 가 이미 있으면 실패한다.
 // questions 항목은 둘 중 하나다:
 //   { "common": "goal_achieved", "config"?: {...}, "required"?: bool }  ← src/questions/common.ts 의 공통 문항
 //   { "type": "long", "label": "...", "required"?: bool, "config"?: {...} } ← 이 설문만의 문항
@@ -22,7 +22,7 @@ interface CustomQuestion {
   config?: QuestionConfig
 }
 interface SeedFile {
-  study: { id: string; name: string }
+  program: { id: string; name: string }
   cohort: { id: string; name: string }
   leaders: string[]
   survey: {
@@ -63,9 +63,9 @@ const resolved = seed.survey.questions.map((item) => {
 })
 
 const sql = [
-  `INSERT OR IGNORE INTO studies (id, name) VALUES (${q(seed.study.id)}, ${q(seed.study.name)});`,
-  `INSERT OR IGNORE INTO cohorts (id, study_id, name) VALUES (${q(seed.cohort.id)}, ${q(seed.study.id)}, ${q(seed.cohort.name)});`,
-  ...seed.leaders.map((login) => `INSERT OR IGNORE INTO leaders (study_id, login) VALUES (${q(seed.study.id)}, ${q(login)});`),
+  `INSERT OR IGNORE INTO programs (id, name) VALUES (${q(seed.program.id)}, ${q(seed.program.name)});`,
+  `INSERT OR IGNORE INTO cohorts (id, program_id, name) VALUES (${q(seed.cohort.id)}, ${q(seed.program.id)}, ${q(seed.cohort.name)});`,
+  ...seed.leaders.map((login) => `INSERT OR IGNORE INTO leaders (program_id, login) VALUES (${q(seed.program.id)}, ${q(login)});`),
   `INSERT INTO surveys (id, cohort_id, title, description, anonymous, closes_at, created_at) VALUES (${q(seed.survey.id)}, ${q(seed.cohort.id)}, ${q(seed.survey.title)}, ${q(seed.survey.description)}, ${seed.survey.anonymous === false ? 0 : 1}, ${q(seed.survey.closesAt)}, ${q(now)});`,
   ...resolved.map(
     (question, i) =>

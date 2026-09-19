@@ -29,6 +29,13 @@
       "when": 1789779175890,
       "tag": "0003_drop_question_options",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1789779829872,
+      "tag": "0004_rename_studies_to_programs",
+      "breakpoints": true
     }
   ]
 }

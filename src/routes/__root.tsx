@@ -13,7 +13,7 @@ export const Route = createRootRoute({
       { property: 'og:site_name', content: '달레 스터디 피드백' },
       { property: 'og:type', content: 'website' },
       { property: 'og:title', content: '달레 스터디 피드백' },
-      { property: 'og:description', content: '스터디 피드백을 한곳에 모읍니다' },
+      { property: 'og:description', content: '스터디와 프로젝트 피드백을 한곳에 모읍니다' },
     ],
     links: [
       { rel: 'stylesheet', href: appCss },

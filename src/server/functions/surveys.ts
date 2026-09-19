@@ -3,7 +3,7 @@ import { notFound } from '@tanstack/react-router'
 import { env } from 'cloudflare:workers'
 import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import { getDb } from '@/db'
-import { answers, cohorts, leaders, questions, responses, studies, surveys } from '@/db/schema'
+import { answers, cohorts, leaders, programs, questions, responses, surveys } from '@/db/schema'
 import { isLeaderOfCohort } from '../access'
 import { authMiddleware } from '../auth/middleware'
 import { anonymousRespondentKey } from '../respondent-key'
@@ -18,7 +18,7 @@ async function respondentKeyFor(survey: { id: string; anonymous: boolean }, user
 }
 
 // 답할 수 있는 설문 전부와 내가 결과를 볼 설문.
-// 참가자 명단은 두지 않는다. 링크는 스터디 채널에만 공유되고, 로그인 + 중복 방지로 충분하다.
+// 참가자 명단은 두지 않는다. 링크는 프로그램 채널에만 공유되고, 로그인 + 중복 방지로 충분하다.
 export const listMySurveys = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
   .handler(async ({ context: { user } }) => {
@@ -30,22 +30,22 @@ export const listMySurveys = createServerFn({ method: 'GET' })
       closesAt: surveys.closesAt,
       anonymous: surveys.anonymous,
       cohortName: cohorts.name,
-      studyName: studies.name,
+      programName: programs.name,
     }
 
     const toAnswer = await db
       .select(surveyCard)
       .from(surveys)
       .innerJoin(cohorts, eq(cohorts.id, surveys.cohortId))
-      .innerJoin(studies, eq(studies.id, cohorts.studyId))
+      .innerJoin(programs, eq(programs.id, cohorts.programId))
       .orderBy(desc(surveys.createdAt))
 
     const toReview = await db
       .select(surveyCard)
       .from(surveys)
       .innerJoin(cohorts, eq(cohorts.id, surveys.cohortId))
-      .innerJoin(studies, eq(studies.id, cohorts.studyId))
-      .innerJoin(leaders, and(eq(leaders.studyId, studies.id), eq(leaders.login, user.login)))
+      .innerJoin(programs, eq(programs.id, cohorts.programId))
+      .innerJoin(leaders, and(eq(leaders.programId, programs.id), eq(leaders.login, user.login)))
       .orderBy(desc(surveys.createdAt))
 
     // 이미 답한 설문 표시: 설문별 내 응답자 키와 일치하는 응답이 있는지 본다

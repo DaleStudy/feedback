@@ -22,29 +22,31 @@ export const sessions = sqliteTable('sessions', {
   expiresAt: text('expires_at').notNull(),
 })
 
-export const studies = sqliteTable('studies', {
-  id: text('id').primaryKey(), // 'blog', 'leetcode'
+// 스터디와 프로젝트를 아우르는 단위 (dalestudy.com/programs)
+export const programs = sqliteTable('programs', {
+  id: text('id').primaryKey(), // 'blog', 'leetcode', 'daleui'
   name: text('name').notNull(),
 })
 
+// 설문을 묶는 기간. 기수제면 '1기', 상시 프로그램이면 '2026 하반기' 같은 이름을 쓴다.
 export const cohorts = sqliteTable('cohorts', {
   id: text('id').primaryKey(), // 'blog01' — GitHub 팀 슬러그(leetcode08)와 같은 표기
-  studyId: text('study_id')
+  programId: text('program_id')
     .notNull()
-    .references(() => studies.id),
-  name: text('name').notNull(), // '2기'
+    .references(() => programs.id),
+  name: text('name').notNull(), // '1기'
 })
 
-// 리더는 스터디 단위. GitHub login 으로 등록하므로 로그인 전에도 명단을 넣을 수 있다.
+// 리더는 프로그램 단위. GitHub login 으로 등록하므로 로그인 전에도 명단을 넣을 수 있다.
 export const leaders = sqliteTable(
   'leaders',
   {
-    studyId: text('study_id')
+    programId: text('program_id')
       .notNull()
-      .references(() => studies.id),
+      .references(() => programs.id),
     login: text('login').notNull(),
   },
-  (t) => [primaryKey({ columns: [t.studyId, t.login] })],
+  (t) => [primaryKey({ columns: [t.programId, t.login] })],
 )
 
 export const surveys = sqliteTable('surveys', {
