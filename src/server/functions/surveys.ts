@@ -7,6 +7,7 @@ import { answers, cohorts, leaders, questions, responses, studies, surveys } fro
 import { isLeaderOfCohort } from '../access'
 import { authMiddleware } from '../auth/middleware'
 import { anonymousRespondentKey } from '../respondent-key'
+import { validateAnswer } from '@/questions/registry'
 
 function isClosed(closesAt: string | null) {
   return closesAt !== null && closesAt < new Date().toISOString()
@@ -112,12 +113,8 @@ export const submitResponse = createServerFn({ method: 'POST' })
     for (const q of surveyQuestions) {
       const value = given.get(q.id) ?? ''
       if (q.required && !value) throw new Error(`필수 항목입니다: ${q.label}`)
-      if (value && q.type === 'scale' && !['1', '2', '3', '4', '5'].includes(value)) {
-        throw new Error(`1~5 사이 값이어야 합니다: ${q.label}`)
-      }
-      if (value && q.type === 'choice' && !q.options?.includes(value)) {
-        throw new Error(`보기에 없는 값입니다: ${q.label}`)
-      }
+      const problem = value ? validateAnswer(q, value) : null
+      if (problem) throw new Error(`${problem}: ${q.label}`)
     }
 
     const key = await respondentKeyFor(survey, user)
@@ -179,9 +176,10 @@ export const getSurveyResults = createServerFn({ method: 'GET' })
       respondents: survey.anonymous ? null : surveyResponses.map((r) => r.respondentKey),
       questions: surveyQuestions.map((q) => ({
         id: q.id,
+        key: q.key,
         type: q.type,
         label: q.label,
-        options: q.options,
+        config: q.config,
         values: byQuestion.get(q.id) ?? [],
       })),
     }

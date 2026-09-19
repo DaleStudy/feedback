@@ -1,15 +1,13 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Button, Heading, RadioGroup, Text, TextInput, VStack } from 'daleui'
-import { Textarea } from '@/components/Textarea'
+import { Button, Heading, Text, VStack } from 'daleui'
+import { QuestionInput } from '@/questions/registry'
 import { getSurvey, submitResponse } from '@/server/functions/surveys'
 
 export const Route = createFileRoute('/_authed/surveys/$surveyId/')({
   loader: ({ params }) => getSurvey({ data: { surveyId: params.surveyId } }),
   component: SurveyPage,
 })
-
-const SCALE = ['1', '2', '3', '4', '5']
 
 function SurveyPage() {
   const survey = Route.useLoaderData()
@@ -75,61 +73,9 @@ function SurveyPage() {
     <form onSubmit={handleSubmit}>
       <VStack align="stretch" gap="32">
         {header}
-        {survey.questions.map((q) => {
-          const value = values[q.id] ?? ''
-          switch (q.type) {
-            case 'scale':
-              return (
-                <RadioGroup
-                  key={q.id}
-                  name={`q${q.id}`}
-                  label={q.label}
-                  orientation="horizontal"
-                  required={q.required}
-                  hint="1 = 전혀 아니다 · 5 = 매우 그렇다"
-                  value={value}
-                  onChange={(v) => set(q.id, v)}
-                >
-                  {SCALE.map((n) => (
-                    <RadioGroup.Item key={n} value={n}>
-                      {n}
-                    </RadioGroup.Item>
-                  ))}
-                </RadioGroup>
-              )
-            case 'choice':
-              return (
-                <RadioGroup
-                  key={q.id}
-                  name={`q${q.id}`}
-                  label={q.label}
-                  required={q.required}
-                  value={value}
-                  onChange={(v) => set(q.id, v)}
-                >
-                  {(q.options ?? []).map((opt) => (
-                    <RadioGroup.Item key={opt} value={opt}>
-                      {opt}
-                    </RadioGroup.Item>
-                  ))}
-                </RadioGroup>
-              )
-            case 'short':
-              return (
-                <TextInput
-                  key={q.id}
-                  label={q.label}
-                  required={q.required}
-                  value={value}
-                  onChange={(e) => set(q.id, e.target.value)}
-                />
-              )
-            case 'long':
-              return (
-                <Textarea key={q.id} label={q.label} required={q.required} value={value} onChange={(v) => set(q.id, v)} />
-              )
-          }
-        })}
+        {survey.questions.map((q) => (
+          <QuestionInput key={q.id} question={q} value={values[q.id] ?? ''} onChange={(v) => set(q.id, v)} />
+        ))}
         {error && <Text tone="danger">{error}</Text>}
         <Button type="submit" loading={submitting}>
           제출
