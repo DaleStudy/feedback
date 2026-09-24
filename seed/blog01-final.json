@@ -1,0 +1,65 @@
+{
+  "editors": [
+    "DaleSeo",
+    "lms0806"
+  ],
+  "survey": {
+    "id": "d0NaCAcL",
+    "title": "블로그 스터디 1기 참여 회고",
+    "description": "10주 동안 함께 쓰고 읽어 주셔서 고마워요. 나의 10주를 돌아보며 스스로 잘한 것과 아쉬웠던 것, 다시 한다면 어떻게 해보고 싶은지 들려주세요. 그 이야기를 바탕으로 다음 기수에 운영진과 다른 참가자가 곁에서 도울 수 있는 것을 함께 찾아볼게요.",
+    "closesAt": "2026-10-06T14:59:59.000Z",
+    "vars": {
+      "program": "스터디",
+      "period": "이번 기수에서",
+      "activity": "매주 글을 쓰는 데",
+      "artifact": "글",
+      "redo": "같은 스터디를 다시 한다면",
+      "next": "다음 기수에 다시"
+    },
+    "questions": [
+      {
+        "common": "goal_achieved"
+      },
+      {
+        "type": "scale",
+        "label": "이제 매주 글쓰기가 얼마나 습관이 된 것 같나요?",
+        "config": {
+          "minLabel": "전혀 아니다",
+          "maxLabel": "완전히 습관이 됐다"
+        }
+      },
+      {
+        "common": "gave_back"
+      },
+      {
+        "common": "highlight"
+      },
+      {
+        "common": "lowlight"
+      },
+      {
+        "common": "do_differently"
+      },
+      {
+        "common": "community_help"
+      },
+      {
+        "type": "long",
+        "label": "운영 방식 중 바꾸거나 없애도 되는 것이 있다면 적어주세요.",
+        "required": false
+      },
+      {
+        "common": "recommend"
+      },
+      {
+        "common": "rejoin"
+      },
+      {
+        "common": "join_organizers"
+      },
+      {
+        "common": "survey_feedback"
+      }
+    ]
+  }
+}

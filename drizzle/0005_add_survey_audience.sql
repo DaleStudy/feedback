@@ -1,0 +1,1 @@
+ALTER TABLE `surveys` ADD `audience` text DEFAULT 'participants' NOT NULL;

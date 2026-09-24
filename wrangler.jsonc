@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "feedback",
+  "account_id": "94480614a6df7731f1e4491bdac5c440",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "@tanstack/react-start/server-entry",
+  "observability": { "enabled": true },
+  "upload_source_maps": true,
+  "routes": [{ "pattern": "feedback.dalestudy.com", "custom_domain": true }],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "feedback",
+      "database_id": "6bbc1200-439a-42a5-8447-4e529f8a3537",
+      "migrations_dir": "drizzle"
+    }
+  ]
+}

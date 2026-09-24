@@ -1,0 +1,1 @@
+ALTER TABLE `questions` ADD `identified` integer DEFAULT false NOT NULL;

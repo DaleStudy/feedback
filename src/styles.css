@@ -1,0 +1,8 @@
+@import "daleui/styles.css";
+@import "tailwindcss";
+
+/* Tailwind 의 base 레이어가 daleui 의 reset 레이어보다 뒤라 글꼴을 덮어쓴다. 같은 토큰을 보게 맞춘다. */
+@theme {
+  --font-sans: var(--fonts-sans);
+  --font-mono: var(--fonts-mono);
+}

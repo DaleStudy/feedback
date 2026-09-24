@@ -1,0 +1,97 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1789607119571,
+      "tag": "0000_init",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1789697163064,
+      "tag": "0001_drop_participants",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789779175586,
+      "tag": "0002_add_question_key_and_config",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1789779175890,
+      "tag": "0003_drop_question_options",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1789779829872,
+      "tag": "0004_rename_studies_to_programs",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1789862738915,
+      "tag": "0005_add_survey_audience",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1789864145633,
+      "tag": "0006_organizers_per_cohort",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1790041967869,
+      "tag": "0007_add_survey_vars",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1790125371693,
+      "tag": "0008_add_survey_editors",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1790125408550,
+      "tag": "0009_drop_cohorts",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1790130184511,
+      "tag": "0010_add_response_user",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1790130184798,
+      "tag": "0011_drop_anonymous",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1790131937481,
+      "tag": "0012_add_question_identified",
+      "breakpoints": true
+    }
+  ]
+}
