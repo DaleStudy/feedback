@@ -40,8 +40,9 @@ export const listMySurveys = createServerFn({ method: 'GET' })
       for (const q of rows) types.set(q.surveyId, [...(types.get(q.surveyId) ?? []), q.type])
     }
 
-    return visible.map(({ visibility: _visibility, ...s }) => ({
+    return visible.map(({ visibility, ...s }) => ({
       ...s,
+      invited: visibility === 'invited',
       questionCount: types.get(s.id)?.length ?? 0,
       minutes: estimateMinutes(types.get(s.id) ?? []),
       answered: answeredIds.has(s.id),

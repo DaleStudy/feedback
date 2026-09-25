@@ -68,6 +68,7 @@ bun run db:migrate:remote   # 프로덕션 D1 마이그레이션 (아래 Gotchas
 - daleui 에 `Textarea`·`Switch` 가 없어 `src/components/Textarea.tsx`·`Switch.tsx` 로 임시 대체. daleui 에 추가되면 교체.
 - **Tailwind 의 base 레이어가 daleui 의 reset 레이어보다 뒤라** 그대로 두면 글꼴을 시스템 글꼴로 덮어쓴다. `src/styles.css` 의 `@theme` 에서 `--font-sans` 를 daleui 토큰으로 맞춘다.
 - **daleui `Link` 는 `className` 을 받으면 자기 스타일 클래스를 버린다.** 라우터가 활성 링크에 넘기는 `className: 'active'` 때문에 `AppLink` 는 `activeProps` 를 비운다. daleui 컴포넌트에 `className` 을 넘길 일이 있으면 같은 문제를 의심한다.
+- **`--colors-bg-neutral` 은 라이트 테마에서 흰색이다.** 회색 면이 필요하면 테두리(`--colors-border-neutral`)로 구분한다.
 - 로컬에서 GitHub 로그인 없이 인증 흐름을 확인하려면 `users` 와 `sessions` 에 행을 직접 넣고 `Cookie: __Host-session=<id>` 로 요청한다.
 
 ## Deferred

@@ -25,9 +25,13 @@ export function formatDeadline(iso: string) {
   return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일 ${hh}:${mm}`
 }
 
-// KST 달력 기준으로 남은 날. 마감 당일은 "D-day", 지났으면 null.
-export function dday(iso: string, now = new Date()) {
+// KST 달력 기준으로 남은 날. 마감 당일은 0, 지났으면 null.
+export function daysLeft(iso: string, now = new Date()) {
   if (isClosed(iso, now)) return null
-  const days = Math.round((Date.parse(closesAtToKstDate(iso)) - Date.parse(closesAtToKstDate(now.toISOString()))) / DAY_MS)
-  return days === 0 ? 'D-day' : `D-${days}`
+  return Math.round((Date.parse(closesAtToKstDate(iso)) - Date.parse(closesAtToKstDate(now.toISOString()))) / DAY_MS)
+}
+
+export function dday(iso: string, now = new Date()) {
+  const days = daysLeft(iso, now)
+  return days === null ? null : days === 0 ? 'D-day' : `D-${days}`
 }

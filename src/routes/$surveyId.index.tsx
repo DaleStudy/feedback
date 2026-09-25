@@ -210,9 +210,10 @@ function SurveyFlow({ survey, previewMode }: { survey: SurveyData; previewMode: 
             <Heading level={2} size={2} id={headingId} wordBreak="cjk">
               {current.label}
             </Heading>
-            {!current.required && (
-              <div>
-                <Tag tone="neutral">선택 · 건너뛰어도 돼요</Tag>
+            {(!current.required || current.identified) && (
+              <div className="flex flex-wrap gap-2">
+                {!current.required && <Tag tone="neutral">선택 · 건너뛰어도 돼요</Tag>}
+                {current.identified && <Tag tone="info">이 답에는 GitHub 아이디가 함께 보여요</Tag>}
               </div>
             )}
           </div>
