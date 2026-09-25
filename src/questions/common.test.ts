@@ -62,7 +62,7 @@ describe('commonQuestions', () => {
       organizer_help: '그렇게 하는 데 커뮤니티 차원에서 다른 운영진이 어떤 도움을 주면 좋을까요?',
       organizer_automate: '반복 작업 중 자동화하거나 아예 없애고 싶은 것이 있다면 적어주세요.',
       organizer_continue: '다음 기수에 다시 운영을 맡을 생각이 있나요?',
-      survey_feedback: '헷갈렸던 설문 문항이나 더 물어봤으면 하는 게 있었다면 알려주세요.',
+      survey_feedback: '헷갈렸던 문항이나 다음 설문에서 더 물어봤으면 하는 게 있었다면 알려주세요.',
     })
   })
 })

@@ -78,7 +78,7 @@ export const commonQuestions: readonly CommonQuestion[] = [
   { key: 'organizer_continue', audience: 'organizers', type: 'choice', label: '{next} 운영을 맡을 생각이 있나요?', config: { options: ['있다', '없다'] } },
 
   // 양쪽 맨 끝. 첫 기수부터 문항 자체가 잘 작동했는지 듣는다.
-  { key: 'survey_feedback', type: 'long', label: '헷갈렸던 설문 문항이나 더 물어봤으면 하는 게 있었다면 알려주세요.', required: false },
+  { key: 'survey_feedback', type: 'long', label: '헷갈렸던 문항이나 다음 설문에서 더 물어봤으면 하는 게 있었다면 알려주세요.', required: false },
 ]
 
 // 자리표시자 바로 뒤의 조사는 앞말의 받침에 맞춰 고른다: {artifact}을 → 글을 / 풀이를
