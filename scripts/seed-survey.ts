@@ -7,9 +7,9 @@
 //   { "type": "long", "label": "...", "required"?: bool, "config"?: {...} } ← 이 설문만의 문항
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import type { QuestionConfig, QuestionType } from '../src/db/schema'
+import type { QuestionConfig, QuestionType, Visibility } from '../src/db/schema'
 import type { CommonVars } from '../src/questions/common'
-import { type QuestionInput, newSurveyId, normalizeSurveyFields, resolveQuestions } from '../src/server/survey-input'
+import { type QuestionInput, newSurveyId, normalizeSurveyFields, parseInvitee, resolveQuestions } from '../src/server/survey-input'
 
 interface CommonRef {
   common: string
@@ -27,7 +27,8 @@ interface SeedFile {
     id?: string
     title: string
     description?: string
-    listed?: boolean // 기본 true (홈에 보임)
+    visibility?: Visibility // 기본 home
+    invitees?: string[] // visibility 가 invited 일 때 대상. "@login" 또는 "team:slug"
     closesAt?: string
     vars?: CommonVars
     questions: Array<CommonRef | CustomQuestion>
@@ -48,7 +49,7 @@ const id = seed.survey.id ?? newSurveyId()
 const survey = normalizeSurveyFields({
   title: seed.survey.title,
   description: seed.survey.description ?? null,
-  listed: seed.survey.listed ?? true,
+  visibility: seed.survey.visibility ?? 'home',
   closesAt: seed.survey.closesAt ?? null,
   vars: seed.survey.vars ?? null,
 })
@@ -56,8 +57,9 @@ const items: QuestionInput[] = seed.survey.questions.map((item) => ('common' in 
 const rows = resolveQuestions(items, survey.vars)
 
 const sql = [
-  `INSERT INTO surveys (id, title, description, listed, closes_at, vars, created_at) VALUES (${q(id)}, ${q(survey.title)}, ${q(survey.description)}, ${survey.listed ? 1 : 0}, ${q(survey.closesAt)}, ${q(survey.vars ? JSON.stringify(survey.vars) : null)}, ${q(new Date().toISOString())});`,
+  `INSERT INTO surveys (id, title, description, visibility, closes_at, vars, created_at) VALUES (${q(id)}, ${q(survey.title)}, ${q(survey.description)}, ${q(survey.visibility)}, ${q(survey.closesAt)}, ${q(survey.vars ? JSON.stringify(survey.vars) : null)}, ${q(new Date().toISOString())});`,
   ...seed.editors.map((login) => `INSERT INTO survey_editors (survey_id, login) VALUES (${q(id)}, ${q(login)});`),
+  ...(seed.survey.invitees ?? []).map(parseInvitee).map((i) => `INSERT INTO survey_invitees (survey_id, kind, name) VALUES (${q(id)}, ${q(i.kind)}, ${q(i.name)});`),
   ...rows.map(
     (row) =>
       `INSERT INTO questions (survey_id, position, key, type, label, required, identified, config) VALUES (${q(id)}, ${row.position}, ${q(row.key)}, ${q(row.type)}, ${q(row.label)}, ${row.required ? 1 : 0}, ${row.identified ? 1 : 0}, ${q(row.config ? JSON.stringify(row.config) : null)});`,

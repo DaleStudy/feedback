@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { CommonVars } from '@/questions/common'
-import { isValidLogin, newSurveyId, normalizeSurveyFields, resolveQuestions } from './survey-input'
+import { isValidLogin, newSurveyId, normalizeSurveyFields, parseInvitee, resolveQuestions } from './survey-input'
 
 const vars: CommonVars = {
   program: '스터디',
@@ -31,8 +31,20 @@ describe('isValidLogin', () => {
   })
 })
 
+describe('parseInvitee', () => {
+  test('@login 은 개인, team:slug 는 팀', () => {
+    expect(parseInvitee(' @DaleSeo ')).toEqual({ kind: 'user', name: 'DaleSeo' })
+    expect(parseInvitee('team:Maintainer')).toEqual({ kind: 'team', name: 'maintainer' })
+  })
+
+  test('형식이 틀리면 실패한다', () => {
+    expect(() => parseInvitee('team:')).toThrow('팀')
+    expect(() => parseInvitee('두 단어')).toThrow('아이디')
+  })
+})
+
 describe('normalizeSurveyFields', () => {
-  const base = { title: ' 회고 ', description: '  ', listed: true, closesAt: null, vars: null }
+  const base = { title: ' 회고 ', description: '  ', visibility: 'home' as const, closesAt: null, vars: null }
 
   test('공백을 정리하고 빈 설명은 null 로', () => {
     expect(normalizeSurveyFields(base)).toEqual({ ...base, title: '회고', description: null })

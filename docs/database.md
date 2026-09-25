@@ -10,6 +10,7 @@ erDiagram
         text name
         text avatar_url
         integer can_create_surveys "로그인 때 maintainer 팀 멤버인지"
+        text teams "로그인 때 받은 DaleStudy 팀 slug 목록 (JSON)"
         text created_at
     }
     sessions {
@@ -21,7 +22,7 @@ erDiagram
         text id PK "nanoid 8자"
         text title
         text description
-        integer listed "1 이면 홈에 보임"
+        text visibility "home | link | invited"
         text closes_at "null 이면 계속 열림"
         text vars "공통 문항 자리표시자 값 (JSON)"
         text created_at
@@ -29,6 +30,11 @@ erDiagram
     survey_editors {
         text survey_id PK, FK
         text login PK "GitHub login. users 와 FK 없음"
+    }
+    survey_invitees {
+        text survey_id PK, FK
+        text kind PK "user | team"
+        text name PK "GitHub login 또는 팀 slug"
     }
     questions {
         integer id PK "autoincrement"
@@ -56,6 +62,7 @@ erDiagram
     users ||--o{ sessions : "cascade"
     users ||--o{ responses : ""
     surveys ||--o{ survey_editors : "cascade"
+    surveys ||--o{ survey_invitees : "cascade"
     surveys ||--o{ questions : "cascade"
     surveys ||--o{ responses : "cascade"
     responses ||--o{ answers : "cascade"
@@ -82,7 +89,7 @@ erDiagram
 | `id` | nanoid 8자. URL 에 그대로 나온다 (`/V1StGXR8`) |
 | `title` | |
 | `description` | 응답 시작 화면의 안내문. null 가능. 예상 시간·익명 여부처럼 화면이 계산해 보여 주는 것은 적지 않는다 |
-| `listed` | 1 이면 로그인한 누구나 홈에서 본다. 0 이면 링크로만 (운영 회고처럼 대상이 정해진 설문) |
+| `visibility` | `home`: 로그인한 누구나 홈에서 보고 답한다. `link`: 홈에 안 보이고 링크를 받은 사람만. `invited`: `survey_invitees` 의 사람·팀(과 편집자)만 홈에서 보고 답한다 |
 | `closes_at` | ISO 8601 UTC. null 이면 계속 열림. 편집 화면은 날짜만 받아 그날 23:59:59 KST 로 저장한다. "지금 마감"은 지금 시각을, "다시 열기"는 null 을 넣는다 |
 | `vars` | 공통 문항 자리표시자 값 (`program`, `period`, `activity`, `artifact`, `redo`, `next`). 공통 문항을 넣을 때 문구를 채운다. null 가능 |
 | `created_at` | ISO 8601 UTC |
@@ -95,6 +102,16 @@ erDiagram
 |---|---|
 | `survey_id` | PK, FK → surveys. 설문 삭제 시 cascade |
 | `login` | PK. GitHub login. `users` 와 FK 없음 |
+
+### survey_invitees
+
+`visibility` 가 `invited` 인 설문의 대상. 편집자처럼 GitHub 이름으로 적어 아직 로그인한 적 없는 사람도 넣을 수 있다.
+
+| 컬럼 | 설명 |
+|---|---|
+| `survey_id` | PK, FK → surveys. cascade |
+| `kind` | PK. `user`(GitHub login) 또는 `team`(DaleStudy 팀 slug) |
+| `name` | PK. login 은 대소문자를 가리지 않고 비교한다. 팀은 `users.teams` 와 맞춰 본다 |
 
 ### questions
 
@@ -140,6 +157,7 @@ GitHub 로그인 때 upsert 되는 신원 캐시.
 | `name` | GitHub 표시 이름. null 가능 |
 | `avatar_url` | |
 | `can_create_surveys` | 로그인할 때 DaleStudy `maintainer` 팀 멤버인지 확인해 적는다. 팀이 바뀌면 다음 로그인 때 반영 |
+| `teams` | 로그인할 때 받아 두는 DaleStudy 팀 slug 목록(JSON). 팀으로 대상을 정한 설문이 본다. 토큰을 저장하지 않으므로 다음 로그인 때 갱신된다 |
 | `created_at` | 첫 로그인 시각 |
 
 ### sessions
@@ -154,7 +172,7 @@ GitHub 로그인 때 upsert 되는 신원 캐시.
 
 | 관계 | 이유 |
 |---|---|
-| `survey_editors.login` → `users.login` | 아직 로그인한 적 없는 사람도 편집자로 넣을 수 있어야 한다. 대가: GitHub login 은 바뀔 수 있다. 편집자가 login 을 바꾸면 다른 편집자가 새 login 을 넣고 옛 것을 뺀다. |
+| `survey_editors.login`, `survey_invitees.name` → `users.login` | 아직 로그인한 적 없는 사람도 편집자로 넣을 수 있어야 한다. 대가: GitHub login 은 바뀔 수 있다. 편집자가 login 을 바꾸면 다른 편집자가 새 login 을 넣고 옛 것을 뺀다. |
 | `questions.key` → 어디든 | 공통 문항 정의는 DB 가 아니라 코드(`src/questions/common.ts`)에 있다. DB 는 문자열만 갖는다. |
 
 ## 키와 제약
@@ -202,3 +220,5 @@ GROUP BY s.id ORDER BY s.created_at;
 | `0010_add_response_user` | 익명 응답자 키(HMAC) 대신 `responses.user_id`. 응답 0건이라 두 표를 다시 만들었다 |
 | `0011_drop_anonymous` | `surveys.anonymous` 제거 |
 | `0012_add_question_identified` | 결과에 응답자 아이디를 붙이는 문항 (운영진 모집) |
+| `0013_add_invitees` | 공개 범위를 `visibility`(home·link·invited)로, 대상 표 `survey_invitees`, `users.teams`. `listed = 0` 은 `link` 로 옮김 |
+| `0014_drop_listed` | `surveys.listed` 제거. 새 코드 배포 뒤에 적용 |

@@ -3,11 +3,11 @@ import { notFound, redirect } from '@tanstack/react-router'
 import { env } from 'cloudflare:workers'
 import { and, asc, count, desc, eq, inArray } from 'drizzle-orm'
 import { type Database, getDb } from '@/db'
-import { questions, responses, surveyEditors, surveys } from '@/db/schema'
+import { questions, responses, surveyEditors, surveyInvitees, surveys } from '@/db/schema'
 import { isClosed } from '@/lib/kst'
 import { editedSurveyIds, isEditor } from '../access'
 import { authMiddleware } from '../auth/middleware'
-import { type QuestionInput, type SurveyFields, isValidLogin, newSurveyId, normalizeSurveyFields, resolveQuestions } from '../survey-input'
+import { type QuestionInput, type SurveyFields, isValidLogin, newSurveyId, normalizeSurveyFields, parseInvitee, resolveQuestions } from '../survey-input'
 
 // 편집자가 설문을 고치고 결과를 보는 서버 함수. 새 설문은 maintainer 팀(users.canCreateSurveys)만 만든다.
 // 응답이 1건이라도 있으면 문항·vars 는 잠긴다 (answers 가 question id 를 참조하기 때문).
@@ -39,7 +39,7 @@ export const listManagedSurveys = createServerFn({ method: 'GET' })
           .select({
             id: surveys.id,
             title: surveys.title,
-            listed: surveys.listed,
+            visibility: surveys.visibility,
             closesAt: surveys.closesAt,
             responseCount: count(responses.id),
           })
@@ -68,7 +68,12 @@ export const getSurveyForEdit = createServerFn({ method: 'GET' })
       .from(surveyEditors)
       .where(eq(surveyEditors.surveyId, survey.id))
       .orderBy(asc(surveyEditors.login))
-    return { ...survey, questions: surveyQuestions, editors: editors.map((e) => e.login), responseCount, locked }
+    const invitees = await db
+      .select({ kind: surveyInvitees.kind, name: surveyInvitees.name })
+      .from(surveyInvitees)
+      .where(eq(surveyInvitees.surveyId, survey.id))
+      .orderBy(asc(surveyInvitees.kind), asc(surveyInvitees.name))
+    return { ...survey, questions: surveyQuestions, editors: editors.map((e) => e.login), invitees, responseCount, locked }
   })
 
 // 제목과 설명만 받는다. 나머지(마감·공개 범위·문항)는 편집 화면에서 정한다.
@@ -78,7 +83,7 @@ export const createSurvey = createServerFn({ method: 'POST' })
   .handler(async ({ data, context: { user } }) => {
     if (!user.canCreateSurveys) throw new Error('새 설문은 DaleStudy 운영진(maintainer 팀)만 만들 수 있어요')
     const db = getDb(env.DB)
-    const fields = normalizeSurveyFields({ ...data, listed: true, closesAt: null, vars: null })
+    const fields = normalizeSurveyFields({ ...data, visibility: 'home', closesAt: null, vars: null })
     const id = newSurveyId()
     await db.batch([
       db.insert(surveys).values({ id, ...fields, createdAt: new Date().toISOString() }),
@@ -178,4 +183,25 @@ export const removeEditor = createServerFn({ method: 'POST' })
     const [{ n }] = await db.select({ n: count() }).from(surveyEditors).where(eq(surveyEditors.surveyId, survey.id))
     if (n <= 1) throw new Error('편집자가 한 명은 있어야 해요')
     await db.delete(surveyEditors).where(and(eq(surveyEditors.surveyId, survey.id), eq(surveyEditors.login, data.login)))
+  })
+
+// 대상(visibility = invited): "@login" 은 개인, "team:slug" 는 DaleStudy 팀. 바꾸면 바로 저장된다.
+export const addInvitee = createServerFn({ method: 'POST' })
+  .middleware([authMiddleware])
+  .validator((input: { surveyId: string; value: string }) => input)
+  .handler(async ({ data, context: { user } }) => {
+    const db = getDb(env.DB)
+    const { survey } = await loadOpenSurvey(db, data.surveyId, user.login)
+    await db.insert(surveyInvitees).values({ surveyId: survey.id, ...parseInvitee(data.value) }).onConflictDoNothing()
+  })
+
+export const removeInvitee = createServerFn({ method: 'POST' })
+  .middleware([authMiddleware])
+  .validator((input: { surveyId: string; kind: 'user' | 'team'; name: string }) => input)
+  .handler(async ({ data, context: { user } }) => {
+    const db = getDb(env.DB)
+    const { survey } = await loadOpenSurvey(db, data.surveyId, user.login)
+    await db
+      .delete(surveyInvitees)
+      .where(and(eq(surveyInvitees.surveyId, survey.id), eq(surveyInvitees.kind, data.kind), eq(surveyInvitees.name, data.name)))
   })

@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid'
-import { type QuestionConfig, type QuestionType, questionTypes } from '@/db/schema'
+import { type QuestionConfig, type QuestionType, type Visibility, questionTypes, visibilities } from '@/db/schema'
 import { type CommonVars, commonQuestions, renderLabel } from '@/questions/common'
 import { validateConfig } from '@/questions/registry'
 
@@ -14,10 +14,28 @@ export function isValidLogin(value: string) {
   return /^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/.test(value)
 }
 
+// GitHub 팀 slug: 소문자·숫자·하이픈
+export function isValidTeam(value: string) {
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)
+}
+
+// 대상 입력 한 줄을 개인 또는 팀으로. "@login" 은 개인, "team:slug" 는 팀. 앞뒤 공백은 무시한다.
+export function parseInvitee(input: string): { kind: 'user' | 'team'; name: string } {
+  const value = input.trim()
+  if (value.startsWith('team:')) {
+    const name = value.slice(5).trim().toLowerCase()
+    if (!isValidTeam(name)) throw new Error('팀 이름이 올바르지 않아요')
+    return { kind: 'team', name }
+  }
+  const name = value.replace(/^@/, '')
+  if (!isValidLogin(name)) throw new Error('GitHub 아이디가 올바르지 않아요')
+  return { kind: 'user', name }
+}
+
 export interface SurveyFields {
   title: string
   description: string | null
-  listed: boolean
+  visibility: Visibility
   closesAt: string | null
   vars: CommonVars | null
 }
@@ -28,10 +46,11 @@ export function normalizeSurveyFields(input: SurveyFields): SurveyFields {
   const title = input.title.trim()
   if (!title) throw new Error('제목을 적어주세요')
   if (input.closesAt !== null && Number.isNaN(Date.parse(input.closesAt))) throw new Error('마감 시각이 잘못됐습니다')
+  if (!visibilities.includes(input.visibility)) throw new Error('공개 범위가 잘못됐습니다')
   return {
     title,
     description: input.description?.trim() || null,
-    listed: input.listed,
+    visibility: input.visibility,
     closesAt: input.closesAt,
     vars: normalizeVars(input.vars),
   }

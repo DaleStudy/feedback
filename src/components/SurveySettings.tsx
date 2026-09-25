@@ -1,6 +1,8 @@
 import { Heading, RadioGroup, Text, TextInput } from 'daleui'
 import { closesAtToKstDate, kstDateToClosesAt } from '@/lib/kst'
 import type { CommonVars } from '@/questions/common'
+import { type Visibility, visibilities } from '@/db/schema'
+import { VISIBILITY } from '@/lib/visibility'
 import type { SurveyFields } from '@/server/survey-input'
 import { Textarea } from './Textarea'
 
@@ -57,14 +59,12 @@ export function SurveySettings({ value, onChange, locked }: Props) {
         <Heading level={2} size={5}>
           공개 범위
         </Heading>
-        <RadioGroup
-          name="listed"
-          label="설문을 어디에 보일까요"
-          value={value.listed ? 'home' : 'link'}
-          onChange={(v) => set('listed', v === 'home')}
-        >
-          <RadioGroup.Item value="home">홈에 보이기 — 로그인한 누구나 홈에서 찾을 수 있어요</RadioGroup.Item>
-          <RadioGroup.Item value="link">링크로만 — 홈에는 안 보이고 링크로 들어와요 (운영진 회고처럼)</RadioGroup.Item>
+        <RadioGroup name="visibility" label="누가 보고 답할까요" value={value.visibility} onChange={(v) => set('visibility', v as Visibility)}>
+          {visibilities.map((v) => (
+            <RadioGroup.Item key={v} value={v}>
+              {VISIBILITY[v].label} — {VISIBILITY[v].detail}
+            </RadioGroup.Item>
+          ))}
         </RadioGroup>
       </section>
 

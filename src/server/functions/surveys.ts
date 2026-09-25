@@ -4,13 +4,13 @@ import { env } from 'cloudflare:workers'
 import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import { getDb } from '@/db'
 import { type QuestionType, answers, questions, responses, surveys, users } from '@/db/schema'
-import { isEditor } from '../access'
+import { canRespond, invitedSurveyIds, isEditor } from '../access'
 import { authMiddleware } from '../auth/middleware'
 import { isClosed } from '@/lib/kst'
 import { estimateMinutes, validateAnswer } from '@/questions/registry'
 
-// 홈에 보일 설문: 공개(listed)된 설문 전부와 내가 이미 답한 설문. 참가자 명단은 두지 않는다 —
-// 링크는 프로그램 채널에만 공유되고, 로그인 + 중복 방지로 충분하다. 설문 관리는 /manage (functions/manage.ts).
+// 홈에 보일 설문: 홈 공개(home) 설문 전부, 내가 대상인 invited 설문, 내가 이미 답한 설문.
+// 설문 관리는 /manage (functions/manage.ts).
 export const listMySurveys = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
   .handler(async ({ context: { user } }) => {
@@ -20,7 +20,7 @@ export const listMySurveys = createServerFn({ method: 'GET' })
         id: surveys.id,
         title: surveys.title,
         closesAt: surveys.closesAt,
-        listed: surveys.listed,
+        visibility: surveys.visibility,
       })
       .from(surveys)
       .orderBy(desc(surveys.createdAt))
@@ -29,7 +29,8 @@ export const listMySurveys = createServerFn({ method: 'GET' })
     const mine = await db.select({ surveyId: responses.surveyId }).from(responses).where(eq(responses.userId, user.id))
     const answeredIds = new Set(mine.map((r) => r.surveyId))
 
-    const visible = all.filter((s) => s.listed || answeredIds.has(s.id))
+    const invited = new Set(await invitedSurveyIds(db, user))
+    const visible = all.filter((s) => s.visibility === 'home' || invited.has(s.id) || answeredIds.has(s.id))
     const types = new Map<string, QuestionType[]>()
     if (visible.length) {
       const rows = await db
@@ -39,7 +40,7 @@ export const listMySurveys = createServerFn({ method: 'GET' })
       for (const q of rows) types.set(q.surveyId, [...(types.get(q.surveyId) ?? []), q.type])
     }
 
-    return visible.map(({ listed: _listed, ...s }) => ({
+    return visible.map(({ visibility: _visibility, ...s }) => ({
       ...s,
       questionCount: types.get(s.id)?.length ?? 0,
       minutes: estimateMinutes(types.get(s.id) ?? []),
@@ -71,10 +72,11 @@ export const getSurvey = createServerFn({ method: 'GET' })
     const survey = await db.query.surveys.findFirst({ where: eq(surveys.id, data.surveyId) })
     if (!survey) throw notFound()
 
-    const surveyQuestions = await db.query.questions.findMany({
-      where: eq(questions.surveyId, survey.id),
-      orderBy: asc(questions.position),
-    })
+    // 대상이 아니면 문항을 주지 않는다. 응답 화면은 "대상이 아니에요" 를 보여 준다.
+    const allowed = await canRespond(db, survey, user)
+    const surveyQuestions = allowed
+      ? await db.query.questions.findMany({ where: eq(questions.surveyId, survey.id), orderBy: asc(questions.position) })
+      : []
 
     const existing = await db.query.responses.findFirst({
       where: and(eq(responses.surveyId, survey.id), eq(responses.userId, user.id)),
@@ -82,6 +84,7 @@ export const getSurvey = createServerFn({ method: 'GET' })
 
     return {
       ...survey,
+      allowed,
       closed: isClosed(survey.closesAt),
       minutes: estimateMinutes(surveyQuestions.map((q) => q.type)),
       questions: surveyQuestions,
@@ -98,6 +101,7 @@ export const submitResponse = createServerFn({ method: 'POST' })
     const survey = await db.query.surveys.findFirst({ where: eq(surveys.id, data.surveyId) })
     if (!survey) throw notFound()
     if (isClosed(survey.closesAt)) throw new Error('마감된 설문입니다')
+    if (!(await canRespond(db, survey, user))) throw new Error('이 설문의 대상이 아니에요')
 
     const surveyQuestions = await db.query.questions.findMany({ where: eq(questions.surveyId, survey.id) })
     const byId = new Map(surveyQuestions.map((q) => [q.id, q]))

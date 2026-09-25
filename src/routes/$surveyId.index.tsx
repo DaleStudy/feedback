@@ -144,6 +144,12 @@ function SurveyFlow({ survey, previewMode }: { survey: SurveyData; previewMode: 
         응답이 저장됐어요. 제출한 답은 고칠 수 없어요.
       </Ending>
     )
+  } else if (!survey.allowed) {
+    body = (
+      <Ending icon="clock" tone="neutral" title="이 설문의 대상이 아니에요">
+        정해진 사람과 팀만 답할 수 있는 설문이에요. 대상이라면 GitHub 팀에 들어간 뒤 다시 로그인해 보세요.
+      </Ending>
+    )
   } else if (answered) {
     body = (
       <Ending icon="check" tone="success" title="이미 응답하셨어요" canReview={survey.canReview} surveyId={survey.id}>

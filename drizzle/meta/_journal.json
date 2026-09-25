@@ -92,6 +92,20 @@
       "when": 1790131937481,
       "tag": "0012_add_question_identified",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1790301324986,
+      "tag": "0013_add_invitees",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1790301325331,
+      "tag": "0014_drop_listed",
+      "breakpoints": true
     }
   ]
 }

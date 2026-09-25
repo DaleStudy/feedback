@@ -4,7 +4,7 @@ import { and, eq, ne, sql } from 'drizzle-orm'
 import { getDb } from '@/db'
 import { users } from '@/db/schema'
 import { OAUTH_COOKIE, SESSION_COOKIE, readCookie, serializeCookie } from '@/server/auth/cookies'
-import { SURVEY_CREATORS, exchangeCodeForToken, fetchGitHubUser, isTeamMember } from '@/server/auth/github'
+import { SURVEY_CREATORS, exchangeCodeForToken, fetchGitHubUser, fetchUserTeams, isTeamMember } from '@/server/auth/github'
 import { SESSION_TTL_SECONDS, createSession } from '@/server/auth/session'
 
 export const Route = createFileRoute('/auth/callback')({
@@ -30,7 +30,10 @@ export const Route = createFileRoute('/auth/callback')({
         })
         const gh = await fetchGitHubUser(token)
         // 팀이 바뀌면 다음 로그인 때 반영된다 (세션 30일)
-        const canCreateSurveys = await isTeamMember(token, SURVEY_CREATORS.org, SURVEY_CREATORS.team, gh.login)
+        const [canCreateSurveys, teams] = await Promise.all([
+          isTeamMember(token, SURVEY_CREATORS.org, SURVEY_CREATORS.team, gh.login),
+          fetchUserTeams(token, SURVEY_CREATORS.org),
+        ])
 
         const db = getDb(env.DB)
         // GitHub login 은 바뀔 수 있다. 같은 login 을 다른 id 가 갖고 있으면 그쪽이 옛 이름이므로 비켜 준다.
@@ -46,11 +49,12 @@ export const Route = createFileRoute('/auth/callback')({
             name: gh.name,
             avatarUrl: gh.avatar_url,
             canCreateSurveys,
+            teams,
             createdAt: new Date().toISOString(),
           })
           .onConflictDoUpdate({
             target: users.id,
-            set: { login: gh.login, name: gh.name, avatarUrl: gh.avatar_url, canCreateSurveys },
+            set: { login: gh.login, name: gh.name, avatarUrl: gh.avatar_url, canCreateSurveys, teams },
           })
         const sessionId = await createSession(db, gh.id)
 

@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Button, Heading, Icon, Tag, Text, TextInput } from 'daleui'
+import { Button, Heading, Icon, Select, Tag, Text, TextInput } from 'daleui'
 import { pageHead } from '@/lib/seo'
 import { AppLink } from '@/components/AppLink'
 import { type BuilderItem, SurveyBuilder, withUid } from '@/components/SurveyBuilder'
 import { type SurveyFormValues, SurveySettings, emptyVars } from '@/components/SurveySettings'
-import { addEditor, deleteSurvey, getSurveyForEdit, removeEditor, saveQuestions, updateSurvey } from '@/server/functions/manage'
+import { addEditor, addInvitee, deleteSurvey, getSurveyForEdit, removeEditor, removeInvitee, saveQuestions, updateSurvey } from '@/server/functions/manage'
 
 // 설문 편집. 빌더라 화면 전체를 쓴다 (staticData.bare → __root).
 export const Route = createFileRoute('/_authed/$surveyId/edit')({
@@ -28,7 +28,7 @@ function EditSurveyPage() {
   const [fields, setFields] = useState<SurveyFormValues>({
     title: survey.title,
     description: survey.description,
-    listed: survey.listed,
+    visibility: survey.visibility,
     closesAt: survey.closesAt,
     vars: survey.vars ?? emptyVars,
   })
@@ -148,6 +148,7 @@ function EditSurveyPage() {
               }}
               locked={survey.locked}
             />
+            {fields.visibility === 'invited' && <Invitees surveyId={survey.id} invitees={survey.invitees} />}
             <Editors surveyId={survey.id} editors={survey.editors} me={user?.login ?? ''} />
             {!survey.locked && <DeleteSurvey surveyId={survey.id} />}
           </div>
@@ -170,6 +171,90 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
     >
       {children}
     </button>
+  )
+}
+
+// 대상(공개 범위가 "지정한 사람만"일 때). 편집자처럼 바꾸면 바로 저장된다.
+function Invitees({ surveyId, invitees }: { surveyId: string; invitees: Array<{ kind: 'user' | 'team'; name: string }> }) {
+  const router = useRouter()
+  const [kind, setKind] = useState<'user' | 'team'>('user')
+  const [name, setName] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  const run = async (action: () => Promise<unknown>) => {
+    setError(null)
+    try {
+      await action()
+      await router.invalidate()
+    } catch (err) {
+      setError((err as Error).message)
+    }
+  }
+
+  return (
+    <section className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <Heading level={2} size={5}>
+          대상
+        </Heading>
+        <Text size="sm" tone="neutral">
+          여기 넣은 사람과 DaleStudy 팀의 홈에 보이고, 이 사람들만 답할 수 있어요. 팀은 로그인할 때 확인하므로 팀에 새로 들어간 사람은 다시 로그인해야 해요. 바꾸면 바로 저장돼요.
+        </Text>
+      </div>
+      <ul className="flex flex-col border-t border-[var(--colors-border-neutral)]">
+        {invitees.map((i) => (
+          <li key={`${i.kind}:${i.name}`} className="flex items-center gap-3 border-b border-[var(--colors-border-neutral)] py-3">
+            <Icon name={i.kind === 'team' ? 'users' : 'user'} size="sm" tone="neutral" />
+            <Text tone="neutral">{i.kind === 'team' ? `${i.name} 팀` : `@${i.name}`}</Text>
+            <div className="ml-auto">
+              <Button tone="neutral" variant="ghost" size="sm" onClick={() => run(() => removeInvitee({ data: { surveyId, kind: i.kind, name: i.name } }))}>
+                빼기
+              </Button>
+            </div>
+          </li>
+        ))}
+        {invitees.length === 0 && (
+          <li className="border-b border-[var(--colors-border-neutral)] py-3">
+            <Text size="sm" tone="neutral" muted>
+              아직 대상이 없어요. 대상이 없으면 편집자만 답할 수 있어요.
+            </Text>
+          </li>
+        )}
+      </ul>
+      <form
+        className="flex items-end gap-2"
+        onSubmit={(e) => {
+          e.preventDefault()
+          void run(async () => {
+            await addInvitee({ data: { surveyId, value: kind === 'team' ? `team:${name}` : name } })
+            setName('')
+          })
+        }}
+      >
+        <div className="w-28">
+          <Select label="종류" value={kind} onChange={(e) => setKind(e.target.value as 'user' | 'team')}>
+            <option value="user">사람</option>
+            <option value="team">팀</option>
+          </Select>
+        </div>
+        <div className="grow">
+          <TextInput
+            label="대상 추가"
+            placeholder={kind === 'team' ? '팀 이름 (예: maintainer)' : 'GitHub 아이디'}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <Button type="submit" tone="neutral" variant="outline" disabled={!name.trim()}>
+          추가
+        </Button>
+      </form>
+      {error && (
+        <Text size="sm" tone="danger">
+          {error}
+        </Text>
+      )}
+    </section>
   )
 }
 

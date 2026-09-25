@@ -63,3 +63,13 @@ export async function isTeamMember(token: string, org: string, team: string, log
   const body = (await res.json()) as { state?: string }
   return body.state === 'active'
 }
+
+// 로그인한 사람이 속한 org 의 팀 slug 들. 팀으로 대상을 정한 설문이 쓴다. 실패하면 빈 목록 — 팀 대상 설문만 안 보일 뿐 로그인은 막지 않는다.
+export async function fetchUserTeams(token: string, org: string) {
+  const res = await fetch('https://api.github.com/user/teams?per_page=100', {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'User-Agent': 'dalestudy-feedback' },
+  })
+  if (!res.ok) return []
+  const teams = (await res.json()) as Array<{ slug: string; organization: { login: string } }>
+  return teams.filter((t) => t.organization.login.toLowerCase() === org.toLowerCase()).map((t) => t.slug)
+}

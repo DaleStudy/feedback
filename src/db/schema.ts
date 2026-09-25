@@ -14,6 +14,8 @@ export const users = sqliteTable('users', {
   avatarUrl: text('avatar_url'),
   // 로그인할 때 GitHub 의 DaleStudy maintainer 팀 멤버인지 확인해 적는다. 새 설문은 이 사람만 만든다.
   canCreateSurveys: integer('can_create_surveys', { mode: 'boolean' }).notNull().default(false),
+  // 로그인할 때 받아 두는 DaleStudy 조직의 팀 slug 목록. 팀으로 대상을 정한 설문이 이걸 본다. 다음 로그인 때 갱신된다.
+  teams: text('teams', { mode: 'json' }).$type<string[]>().notNull().default([]),
   createdAt: text('created_at').notNull(),
 })
 
@@ -25,14 +27,17 @@ export const sessions = sqliteTable('sessions', {
   expiresAt: text('expires_at').notNull(),
 })
 
+export const visibilities = ['home', 'link', 'invited'] as const
+export type Visibility = (typeof visibilities)[number]
+
 // 설문 하나. 누가 고치고 결과를 보는지는 survey_editors 가 정한다.
 export const surveys = sqliteTable('surveys', {
   id: text('id').primaryKey(), // nanoid 8자 (예: 'V1StGXR8')
   title: text('title').notNull(),
   description: text('description'),
   closesAt: text('closes_at'), // null 이면 계속 열려 있음
-  // true 면 로그인한 누구나 홈에서 본다. false 면 링크로만 (운영진 회고처럼 대상이 정해진 설문)
-  listed: integer('listed', { mode: 'boolean' }).notNull().default(true),
+  // home: 로그인한 누구나 홈에서 보고 답한다. link: 링크를 받은 사람만. invited: survey_invitees 에 든 사람·팀만 보고 답한다.
+  visibility: text('visibility', { enum: visibilities }).notNull().default('home'),
   // 공통 문항의 {program}, {activity} 같은 자리표시자를 채우는 값. 편집 UI 에서 공통 문항을 추가할 때 쓴다.
   vars: text('vars', { mode: 'json' }).$type<CommonVars>(),
   createdAt: text('created_at').notNull(),
@@ -74,6 +79,19 @@ export const surveyEditors = sqliteTable(
     login: text('login').notNull(),
   },
   (t) => [primaryKey({ columns: [t.surveyId, t.login] })],
+)
+
+// visibility 가 invited 인 설문의 대상. 개인(GitHub login) 또는 DaleStudy 팀(slug). users 와 FK 없음 — 아직 로그인한 적 없는 사람도 넣는다.
+export const surveyInvitees = sqliteTable(
+  'survey_invitees',
+  {
+    surveyId: text('survey_id')
+      .notNull()
+      .references(() => surveys.id, { onDelete: 'cascade' }),
+    kind: text('kind', { enum: ['user', 'team'] }).notNull(),
+    name: text('name').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.surveyId, t.kind, t.name] })],
 )
 
 export const responses = sqliteTable(

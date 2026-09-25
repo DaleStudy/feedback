@@ -4,6 +4,7 @@ import { Button, Heading, Icon, Text } from 'daleui'
 import { pageHead } from '@/lib/seo'
 import { Switch } from '@/components/Switch'
 import { dday, formatDeadline } from '@/lib/kst'
+import { VISIBILITY } from '@/lib/visibility'
 import { closeSurvey, listManagedSurveys, reopenSurvey } from '@/server/functions/manage'
 
 export const Route = createFileRoute('/_authed/manage')({
@@ -135,9 +136,9 @@ function SurveyCard({ survey }: { survey: ManagedSurvey }) {
           <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1">
             <span className="font-mono text-[13px]">/{survey.id}</span>
             <span className="flex items-center gap-1.5">
-              <Icon name={survey.listed ? 'globe' : 'eyeOff'} size="xs" tone="neutral" />
+              <Icon name={VISIBILITY[survey.visibility].icon} size="xs" tone="neutral" />
               <Text size="sm" tone="neutral">
-                {survey.listed ? '홈에 보임' : '링크로만'}
+                {VISIBILITY[survey.visibility].label}
               </Text>
             </span>
             <span className="flex items-center gap-1.5">
