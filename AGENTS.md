@@ -73,5 +73,5 @@ bun run db:migrate:remote   # 프로덕션 D1 마이그레이션 (아래 Gotchas
 ## Deferred
 
 - **조직 멤버 게이트** — 로그인 시 DaleStudy 조직 멤버만 통과시키는 것. 지금 켜면 실제 참가자가 막힌다(블로그 1기 참가자 17명 중 7명이 조직 멤버가 아니다). 참여 절차에 조직 초대를 넣은 뒤 켠다. 앱에 members 권한이 있으니 로그인 콜백에서 `GET /user/memberships/orgs/DaleStudy` 로 확인하면 된다(`isTeamMember` 와 같은 자리).
-- **daleui 갭** — `Textarea`·`Switch`(임시 구현), 결과·관리 화면에 쓸 `Table`, 설문 보기용 큰 선택 타일(지금은 `Button` 에 `role="radio"`), 라우터와 붙는 버튼 모양 링크, 아이콘 `plus`·`calendar`·`link`·`copy`. daleui 에 추가되면 교체한다.
+- **daleui 갭** — `Textarea`·`Switch`(임시 구현), 결과·관리 화면에 쓸 `Table`, 설문 보기용 큰 선택 타일(지금은 `Button` 에 `role="radio"`), 라우터와 붙는 버튼 모양 링크, 아이콘 `plus`·`calendar`·`link`·`copy`(`link` 는 관리 목록에서 `lucide-react` 로 직접 쓴다 — daleui 가 쓰는 아이콘 세트라 모양이 같다). daleui 에 추가되면 교체한다.
 - **Workers Builds watch paths** — 문서만 바뀐 커밋도 빌드가 돈다. `docs/**`, `*.md` 를 빼면 되지만 빌드가 1분이라 급하지 않다.

@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Button, Heading, Icon, Text } from 'daleui'
+import { Link as LinkIcon } from 'lucide-react'
 import { pageHead } from '@/lib/seo'
 import { Switch } from '@/components/Switch'
 import { dday, formatDeadline } from '@/lib/kst'
@@ -163,6 +164,7 @@ function SurveyCard({ survey }: { survey: ManagedSurvey }) {
         </div>
         <div className="flex flex-wrap items-center gap-1">
           <Button tone="neutral" variant="ghost" size="sm" onClick={copyLink}>
+            {copy === 'copied' ? <Icon name="check" size="sm" /> : <LinkIcon size={16} aria-hidden />}
             {copy === 'copied' ? '복사했어요' : copy === 'failed' ? '복사하지 못했어요' : '링크 복사'}
           </Button>
           <Button tone="neutral" variant="ghost" size="sm" onClick={() => navigate({ to: '/$surveyId', params: { surveyId: survey.id }, search: { preview: true } })}>
