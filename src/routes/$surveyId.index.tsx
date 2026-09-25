@@ -2,6 +2,7 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Button, Heading, Icon, Link as DaleLink, Tag, Text } from 'daleui'
 import { AppLink } from '@/components/AppLink'
+import { LinkifiedText } from '@/components/LinkifiedText'
 import { Logo } from '@/components/Logo'
 import { formatDeadline } from '@/lib/kst'
 import { QuestionInput, questionBehavior } from '@/questions/registry'
@@ -163,7 +164,7 @@ function SurveyFlow({ survey, previewMode }: { survey: SurveyData; previewMode: 
         </Heading>
         {survey.description && (
           <Text as="p" size="lg" tone="neutral" style={{ whiteSpace: 'pre-line' }}>
-            {survey.description}
+            <LinkifiedText text={survey.description} />
           </Text>
         )}
         <div className="flex items-center gap-2">
@@ -274,7 +275,7 @@ function GuestIntro({ preview }: { preview: Preview }) {
         </Heading>
         {preview.description && (
           <Text as="p" size="lg" tone="neutral" style={{ whiteSpace: 'pre-line' }}>
-            {preview.description}
+            <LinkifiedText text={preview.description} />
           </Text>
         )}
         <div className="flex items-center gap-2">
