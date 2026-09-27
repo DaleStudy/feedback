@@ -42,7 +42,7 @@ function ManagePage() {
           <Heading level={1} size={2}>
             설문 관리
           </Heading>
-          <Text tone="neutral">내가 편집자인 설문이에요.</Text>
+          <Text tone="neutral">{canCreate ? '운영진은 모든 설문을 관리할 수 있어요.' : '내가 편집자인 설문이에요.'}</Text>
         </div>
         {surveys.length > 0 && createButton}
       </div>

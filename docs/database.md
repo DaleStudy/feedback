@@ -78,7 +78,7 @@ erDiagram
 응답 하나가 한 사람이 설문 하나에 낸 것이고, 답은 문항당 한 행이다 (long format). 설문마다 넓은 테이블을 만들지 않아 설문을 추가해도 마이그레이션이 없고, `questions.key` 로 설문을 가로질러 집계할 수 있다.
 
 **사람** — `users`, `sessions`, `survey_editors`
-`users` 는 GitHub 로그인 때 upsert 되고 `sessions` 가 그것을 가리킨다. 로그인할 때 DaleStudy 조직의 `maintainer` 팀 멤버인지 확인해 `can_create_surveys` 에 적는다 — 새 설문은 이 사람만 만든다. 설문을 고치고 결과를 보는 사람은 `survey_editors` 가 정한다. 만든 사람이 처음 들어가고, 편집자가 다른 GitHub 계정을 더한다.
+`users` 는 GitHub 로그인 때 upsert 되고 `sessions` 가 그것을 가리킨다. 로그인할 때 DaleStudy 조직의 `maintainer` 팀 멤버인지 확인해 `can_create_surveys` 에 적는다 — 새 설문은 이 사람만 만든다. 설문을 고치고 결과를 보는 사람은 운영진 전원과 `survey_editors` 에 든 사람이다. 만든 사람이 처음 들어가고, 운영진이 아닌 사람에게 맡길 때 GitHub 계정을 더한다.
 
 ## 테이블
 
@@ -96,7 +96,7 @@ erDiagram
 
 ### survey_editors
 
-설문을 고치고 결과를 보는 사람. GitHub login 으로 적으므로 아직 로그인한 적 없는 사람도 넣을 수 있다. 마지막 한 명은 뺄 수 없다.
+운영진(`can_create_surveys`) 말고도 설문을 고치고 결과를 볼 사람. GitHub login 으로 적으므로 아직 로그인한 적 없는 사람도 넣을 수 있다. 마지막 한 명은 뺄 수 없다.
 
 | 컬럼 | 설명 |
 |---|---|

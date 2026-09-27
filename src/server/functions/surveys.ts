@@ -96,7 +96,7 @@ export const getSurvey = createServerFn({ method: 'GET' })
       closed: isClosed(survey.closesAt),
       minutes: estimateMinutes(surveyQuestions.map((q) => q.type)),
       questions: surveyQuestions,
-      canReview: await isEditor(db, survey.id, user.login),
+      canReview: await isEditor(db, survey.id, user),
       answered: Boolean(existing),
       submittedAt: existing?.submittedAt ?? null,
       myAnswers,
@@ -155,7 +155,7 @@ export const getSurveyResults = createServerFn({ method: 'GET' })
     const db = getDb(env.DB)
     const survey = await db.query.surveys.findFirst({ where: eq(surveys.id, data.surveyId) })
     if (!survey) throw notFound()
-    if (!(await isEditor(db, survey.id, user.login))) throw notFound()
+    if (!(await isEditor(db, survey.id, user))) throw notFound()
 
     const surveyQuestions = await db.query.questions.findMany({
       where: eq(questions.surveyId, survey.id),

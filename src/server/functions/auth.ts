@@ -11,13 +11,13 @@ export const getCurrentUser = createServerFn({ method: 'GET' }).handler(async ()
   const user = await getSessionUser()
   if (!user) return null
   // 헤더의 "관리" 탭을 보일지 정한다. 권한 판정은 각 서버 함수가 따로 한다.
-  const edits = await editedSurveyIds(getDb(env.DB), user.login)
+  const canManage = user.canCreateSurveys || (await editedSurveyIds(getDb(env.DB), user)).length > 0
   return {
     login: user.login,
     name: user.name,
     avatarUrl: user.avatarUrl,
     canCreateSurveys: user.canCreateSurveys,
-    canManage: user.canCreateSurveys || edits.length > 0,
+    canManage,
   }
 })
 

@@ -5,25 +5,25 @@ import { and, asc, count, desc, eq, inArray } from 'drizzle-orm'
 import { type Database, getDb } from '@/db'
 import { questions, responses, surveyEditors, surveyInvitees, surveys } from '@/db/schema'
 import { isClosed } from '@/lib/kst'
-import { editedSurveyIds, isEditor } from '../access'
+import { type Manager, editedSurveyIds, isEditor } from '../access'
 import { authMiddleware } from '../auth/middleware'
 import { type QuestionInput, type SurveyFields, isValidLogin, newSurveyId, normalizeSurveyFields, parseInvitee, resolveQuestions } from '../survey-input'
 
-// 편집자가 설문을 고치고 결과를 보는 서버 함수. 새 설문은 maintainer 팀(users.canCreateSurveys)만 만든다.
+// 설문을 고치고 결과를 보는 서버 함수. 운영진(maintainer 팀, users.canCreateSurveys)은 모든 설문을, 편집자는 더해진 설문을 다룬다. 새 설문은 운영진만 만든다.
 // 응답이 1건이라도 있으면 문항·vars 는 잠긴다 (answers 가 question id 를 참조하기 때문).
 
-async function loadEditableSurvey(db: Database, surveyId: string, login: string) {
+async function loadEditableSurvey(db: Database, surveyId: string, user: Manager) {
   const survey = await db.query.surveys.findFirst({ where: eq(surveys.id, surveyId) })
   if (!survey) throw notFound()
-  if (!(await isEditor(db, survey.id, login))) throw notFound()
+  if (!(await isEditor(db, survey.id, user))) throw notFound()
   const [{ n: responseCount }] = await db.select({ n: count() }).from(responses).where(eq(responses.surveyId, survey.id))
   return { survey, responseCount, locked: responseCount > 0 }
 }
 
 // 마감된 설문은 고칠 수 없다. 관리 목록의 스위치로 다시 연 뒤에 고친다.
 const CLOSED_MESSAGE = '마감된 설문은 고칠 수 없어요. 설문 관리에서 다시 연 뒤 고쳐 주세요'
-async function loadOpenSurvey(db: Database, surveyId: string, login: string) {
-  const loaded = await loadEditableSurvey(db, surveyId, login)
+async function loadOpenSurvey(db: Database, surveyId: string, user: Manager) {
+  const loaded = await loadEditableSurvey(db, surveyId, user)
   if (isClosed(loaded.survey.closesAt)) throw new Error(CLOSED_MESSAGE)
   return loaded
 }
@@ -33,7 +33,7 @@ export const listManagedSurveys = createServerFn({ method: 'GET' })
   .middleware([authMiddleware])
   .handler(async ({ context: { user } }) => {
     const db = getDb(env.DB)
-    const ids = await editedSurveyIds(db, user.login)
+    const ids = await editedSurveyIds(db, user)
     const rows = ids.length
       ? await db
           .select({
@@ -57,7 +57,7 @@ export const getSurveyForEdit = createServerFn({ method: 'GET' })
   .validator((input: { surveyId: string }) => input)
   .handler(async ({ data, context: { user } }) => {
     const db = getDb(env.DB)
-    const { survey, responseCount, locked } = await loadEditableSurvey(db, data.surveyId, user.login)
+    const { survey, responseCount, locked } = await loadEditableSurvey(db, data.surveyId, user)
     if (isClosed(survey.closesAt)) throw redirect({ to: '/manage' })
     const surveyQuestions = await db.query.questions.findMany({
       where: eq(questions.surveyId, survey.id),
@@ -97,7 +97,7 @@ export const updateSurvey = createServerFn({ method: 'POST' })
   .validator((input: { surveyId: string } & SurveyFields) => input)
   .handler(async ({ data, context: { user } }) => {
     const db = getDb(env.DB)
-    const { survey, locked } = await loadOpenSurvey(db, data.surveyId, user.login)
+    const { survey, locked } = await loadOpenSurvey(db, data.surveyId, user)
     const fields = normalizeSurveyFields(data)
 
     if (locked) {
@@ -113,7 +113,7 @@ export const saveQuestions = createServerFn({ method: 'POST' })
   .validator((input: { surveyId: string; questions: QuestionInput[] }) => input)
   .handler(async ({ data, context: { user } }) => {
     const db = getDb(env.DB)
-    const { survey, locked } = await loadOpenSurvey(db, data.surveyId, user.login)
+    const { survey, locked } = await loadOpenSurvey(db, data.surveyId, user)
     if (locked) throw new Error('응답이 있는 설문은 문항을 바꿀 수 없습니다')
 
     const rows = resolveQuestions(data.questions, survey.vars).map((row) => ({ ...row, surveyId: survey.id }))
@@ -134,7 +134,7 @@ export const closeSurvey = createServerFn({ method: 'POST' })
   .validator((input: { surveyId: string }) => input)
   .handler(async ({ data, context: { user } }) => {
     const db = getDb(env.DB)
-    const { survey } = await loadEditableSurvey(db, data.surveyId, user.login)
+    const { survey } = await loadEditableSurvey(db, data.surveyId, user)
     if (isClosed(survey.closesAt)) throw new Error('이미 마감된 설문이에요')
     const closesAt = new Date().toISOString()
     await db.update(surveys).set({ closesAt }).where(eq(surveys.id, survey.id))
@@ -147,7 +147,7 @@ export const reopenSurvey = createServerFn({ method: 'POST' })
   .validator((input: { surveyId: string }) => input)
   .handler(async ({ data, context: { user } }) => {
     const db = getDb(env.DB)
-    const { survey } = await loadEditableSurvey(db, data.surveyId, user.login)
+    const { survey } = await loadEditableSurvey(db, data.surveyId, user)
     if (!isClosed(survey.closesAt)) throw new Error('진행 중인 설문이에요')
     await db.update(surveys).set({ closesAt: null }).where(eq(surveys.id, survey.id))
   })
@@ -157,7 +157,7 @@ export const deleteSurvey = createServerFn({ method: 'POST' })
   .validator((input: { surveyId: string }) => input)
   .handler(async ({ data, context: { user } }) => {
     const db = getDb(env.DB)
-    const { survey, locked } = await loadOpenSurvey(db, data.surveyId, user.login)
+    const { survey, locked } = await loadOpenSurvey(db, data.surveyId, user)
     if (locked) throw new Error('응답이 있는 설문은 지울 수 없습니다')
     await db.batch([db.delete(questions).where(eq(questions.surveyId, survey.id)), db.delete(surveys).where(eq(surveys.id, survey.id))])
   })
@@ -167,7 +167,7 @@ export const addEditor = createServerFn({ method: 'POST' })
   .validator((input: { surveyId: string; login: string }) => input)
   .handler(async ({ data, context: { user } }) => {
     const db = getDb(env.DB)
-    const { survey } = await loadOpenSurvey(db, data.surveyId, user.login)
+    const { survey } = await loadOpenSurvey(db, data.surveyId, user)
     const login = data.login.trim().replace(/^@/, '')
     if (!isValidLogin(login)) throw new Error('GitHub 아이디가 올바르지 않아요')
     await db.insert(surveyEditors).values({ surveyId: survey.id, login }).onConflictDoNothing()
@@ -179,7 +179,7 @@ export const removeEditor = createServerFn({ method: 'POST' })
   .validator((input: { surveyId: string; login: string }) => input)
   .handler(async ({ data, context: { user } }) => {
     const db = getDb(env.DB)
-    const { survey } = await loadOpenSurvey(db, data.surveyId, user.login)
+    const { survey } = await loadOpenSurvey(db, data.surveyId, user)
     const [{ n }] = await db.select({ n: count() }).from(surveyEditors).where(eq(surveyEditors.surveyId, survey.id))
     if (n <= 1) throw new Error('편집자가 한 명은 있어야 해요')
     await db.delete(surveyEditors).where(and(eq(surveyEditors.surveyId, survey.id), eq(surveyEditors.login, data.login)))
@@ -191,7 +191,7 @@ export const addInvitee = createServerFn({ method: 'POST' })
   .validator((input: { surveyId: string; value: string }) => input)
   .handler(async ({ data, context: { user } }) => {
     const db = getDb(env.DB)
-    const { survey } = await loadOpenSurvey(db, data.surveyId, user.login)
+    const { survey } = await loadOpenSurvey(db, data.surveyId, user)
     await db.insert(surveyInvitees).values({ surveyId: survey.id, ...parseInvitee(data.value) }).onConflictDoNothing()
   })
 
@@ -200,7 +200,7 @@ export const removeInvitee = createServerFn({ method: 'POST' })
   .validator((input: { surveyId: string; kind: 'user' | 'team'; name: string }) => input)
   .handler(async ({ data, context: { user } }) => {
     const db = getDb(env.DB)
-    const { survey } = await loadOpenSurvey(db, data.surveyId, user.login)
+    const { survey } = await loadOpenSurvey(db, data.surveyId, user)
     await db
       .delete(surveyInvitees)
       .where(and(eq(surveyInvitees.surveyId, survey.id), eq(surveyInvitees.kind, data.kind), eq(surveyInvitees.name, data.name)))

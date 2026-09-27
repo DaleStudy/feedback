@@ -281,7 +281,7 @@ function Editors({ surveyId, editors, me }: { surveyId: string; editors: string[
           편집자
         </Heading>
         <Text size="sm" tone="neutral">
-          편집자는 문항을 고치고 결과를 볼 수 있어요. 바꾸면 바로 저장돼요.
+          운영진(maintainer 팀)은 모든 설문을 고치고 결과를 볼 수 있어요. 운영진이 아닌 사람에게 맡기려면 여기에 더해요. 바꾸면 바로 저장돼요.
         </Text>
       </div>
       <ul className="flex flex-col border-t border-[var(--colors-border-neutral)]">

@@ -1,9 +1,12 @@
 import { and, eq } from 'drizzle-orm'
 import type { Database } from '@/db'
-import { type Visibility, surveyEditors, surveyInvitees } from '@/db/schema'
+import { type Visibility, surveyEditors, surveyInvitees, surveys } from '@/db/schema'
 
-// 설문의 편집자만 문항을 고치고 결과를 본다.
-export async function isEditor(db: Database, surveyId: string, login: string) {
+export type Manager = { login: string; canCreateSurveys: boolean }
+
+// 문항을 고치고 결과를 보는 사람: 운영진(maintainer 팀)은 모든 설문, 그 밖에는 설문마다 더한 편집자(survey_editors).
+export async function isEditor(db: Database, surveyId: string, { login, canCreateSurveys }: Manager) {
+  if (canCreateSurveys) return true
   const [row] = await db
     .select({ login: surveyEditors.login })
     .from(surveyEditors)
@@ -12,7 +15,8 @@ export async function isEditor(db: Database, surveyId: string, login: string) {
   return Boolean(row)
 }
 
-export async function editedSurveyIds(db: Database, login: string) {
+export async function editedSurveyIds(db: Database, { login, canCreateSurveys }: Manager) {
+  if (canCreateSurveys) return (await db.select({ id: surveys.id }).from(surveys)).map((r) => r.id)
   const rows = await db.select({ surveyId: surveyEditors.surveyId }).from(surveyEditors).where(eq(surveyEditors.login, login))
   return rows.map((r) => r.surveyId)
 }
@@ -21,12 +25,12 @@ export async function editedSurveyIds(db: Database, login: string) {
 export async function canRespond(
   db: Database,
   survey: { id: string; visibility: Visibility },
-  user: { login: string; teams: string[] },
+  user: Manager & { teams: string[] },
 ) {
   if (survey.visibility !== 'invited') return true
   const invitees = await db.select().from(surveyInvitees).where(eq(surveyInvitees.surveyId, survey.id))
   if (isInvited(invitees, user)) return true
-  return isEditor(db, survey.id, user.login)
+  return isEditor(db, survey.id, user)
 }
 
 export function isInvited(invitees: Array<{ kind: 'user' | 'team'; name: string }>, user: { login: string; teams: string[] }) {
