@@ -7,13 +7,31 @@
   "main": "@tanstack/react-start/server-entry",
   "observability": { "enabled": true },
   "upload_source_maps": true,
-  "routes": [{ "pattern": "feedback.dalestudy.com", "custom_domain": true }],
+  "routes": [
+    { "pattern": "feedback.dalestudy.com", "custom_domain": true },
+    // 미리보기 전용 도메인: 프로덕션 트래픽은 받지 않는다(enabled: false)
+    { "pattern": "feedback-preview.dalestudy.com", "custom_domain": true, "previews_enabled": true, "enabled": false }
+  ],
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "feedback",
       "database_id": "6bbc1200-439a-42a5-8447-4e529f8a3537",
+      // 미리보기 D1. `d1 migrations apply feedback --preview` 가 여기로 적용한다
+      "preview_database_id": "0d7d18e8-1e8f-443a-96d3-c1c2afa4d4c7",
       "migrations_dir": "drizzle"
     }
-  ]
+  ],
+  // PR 미리보기(Workers Previews). 브랜치마다 <브랜치>.feedback-preview.dalestudy.com 에 뜬다.
+  // D1 은 미리보기끼리 함께 쓰는 feedback-preview 로 — 프로덕션 응답을 건드리지 않게.
+  "previews": {
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_name": "feedback-preview",
+        "database_id": "0d7d18e8-1e8f-443a-96d3-c1c2afa4d4c7",
+        "migrations_dir": "drizzle"
+      }
+    ]
+  }
 }

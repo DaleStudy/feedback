@@ -19,6 +19,8 @@ bun run db:migrate:local    # 로컬 D1 마이그레이션
 bun run db:seed:local <json># 설문 JSON(편집자·문항)을 로컬 D1 에 넣기 (seed/example.json 참고)
 bunx drizzle-kit generate --name <desc>   # 스키마 변경 후 마이그레이션 생성
 bun run db:migrate:remote   # 프로덕션 D1 마이그레이션 (아래 Gotchas 의 순서를 지킨다)
+bun run db:migrate:preview  # 미리보기 D1 마이그레이션
+bun run deploy:preview      # 지금 브랜치의 미리보기 수동 배포 (보통은 push 때 Workers Builds 가 한다)
 ```
 
 ## Local setup
@@ -31,8 +33,15 @@ bun run db:migrate:remote   # 프로덕션 D1 마이그레이션 (아래 Gotchas
 ## Deployment
 
 - `main` 에 push 하면 Cloudflare Workers Builds 가 `bun run build` → `npx wrangler deploy`. 빌드 결과는 커밋의 check run `Workers Builds: feedback` 으로 확인한다. `bun run deploy` 는 수동 fallback.
-- 이미 설정된 것: D1 `feedback`(APAC, id 는 `wrangler.jsonc`), 시크릿 `GITHUB_CLIENT_ID`·`GITHUB_CLIENT_SECRET`, 커스텀 도메인(`wrangler.jsonc` 의 `routes`), 빌드 변수 `BUN_VERSION=1.4.0`(빌드 이미지 기본 bun 은 lockfile v2 를 못 읽는다. 로컬 bun 을 올리면 같이 올린다).
-- GitHub App 의 Callback URL 은 localhost 와 `https://feedback.dalestudy.com/auth/callback` 둘 다. 앱은 **공개(public)** 여야 한다 — 비공개 앱은 소유 조직 멤버만 authorize 할 수 있어서 조직 밖 참가자가 GitHub 의 authorize 페이지에서 404 를 본다(우리 로그에는 안 남는다).
+- **미리보기**: `main` 이 아닌 브랜치를 push 하면 Workers Builds 가 `bun run db:migrate:preview && bun run deploy:preview`(= `wrangler preview`, Workers Previews)로 브랜치마다 `https://<브랜치>.feedback-preview.dalestudy.com` 을 만든다. PR 은 머지 전에 여기서 눌러 본다.
+  - 설정은 `wrangler.jsonc` 의 `previews` 블록(D1 을 다시 선언해야 한다 — 상속되지 않는다)과 `previews_enabled` 커스텀 도메인 route. 미리보기 D1 은 `feedback-preview` 하나를 모든 브랜치가 함께 쓴다. 프로덕션 응답을 건드리지 않는 게 목적이다.
+  - 마이그레이션은 `d1_databases[].preview_database_id` + `--preview` 로 미리보기 D1 에 적용한다(`db:migrate:preview`). `previews` 블록의 D1 은 `d1 migrations apply` 가 찾지 못한다.
+  - 시크릿은 `wrangler preview base-config secret put <KEY>`.
+  - GitHub App 콜백은 `https://feedback-preview.dalestudy.com/auth/callback` 을 와일드카드(하위 도메인 허용)로 등록해 브랜치 주소마다 로그인된다.
+  - `versions upload` 의 버전 URL 은 쓰지 않는다 — 프로덕션 D1 을 쓴다(Cloudflare 문서도 PR 테스트에 쓰지 말라고 한다). 그래서 `preview_urls` 도 켜지 않는다.
+  - Workers Builds 는 브랜치마다 트리거를 만들며 그때의 미리보기 명령을 복사해 둔다. 대시보드의 미리보기 명령을 바꾸면 이미 있던 브랜치에는 적용되지 않는다.
+- 이미 설정된 것: D1 `feedback`·`feedback-preview`(APAC, id 는 `wrangler.jsonc`), 시크릿 `GITHUB_CLIENT_ID`·`GITHUB_CLIENT_SECRET`, 커스텀 도메인(`wrangler.jsonc` 의 `routes`), 빌드 변수 `BUN_VERSION=1.4.0`(빌드 이미지 기본 bun 은 lockfile v2 를 못 읽는다. 로컬 bun 을 올리면 같이 올린다).
+- GitHub App 의 Callback URL 은 localhost, `https://feedback.dalestudy.com/auth/callback`, `https://feedback-preview.dalestudy.com/auth/callback`(와일드카드) 셋. 앱은 **공개(public)** 여야 한다 — 비공개 앱은 소유 조직 멤버만 authorize 할 수 있어서 조직 밖 참가자가 GitHub 의 authorize 페이지에서 404 를 본다(우리 로그에는 안 남는다).
 - 저장소를 새로 만들면 Workers Builds 연결이 끊긴다(대시보드에는 이름이 그대로 보여도). 대시보드에서 Disconnect → Connect 로 다시 잇는다.
 
 ## Architecture
