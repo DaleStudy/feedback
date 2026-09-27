@@ -77,6 +77,8 @@ function ResultsPage() {
         ))}
       </div>
 
+      <Participation result={result} />
+
       <div className="flex items-start gap-10">
         <nav aria-label="문항 목록" className="sticky top-6 hidden w-52 shrink-0 flex-col gap-0.5 lg:flex">
           <div className="px-3 pb-2">
@@ -228,11 +230,56 @@ function Header({ result }: { result: Result }) {
           <Button tone="neutral" variant="outline" size="sm" disabled={result.responseCount === 0} onClick={downloadCsv}>
             CSV 내려받기
           </Button>
-          <AppLink to="/$surveyId/edit" params={{ surveyId: result.id }} tone="brand" size="sm">
-            편집
-          </AppLink>
         </div>
       </div>
+    </div>
+  )
+}
+
+// 누가 답했고 누가 아직인지. 답과는 잇지 않는다 (이름순, 제출 시각 없음).
+function Participation({ result }: { result: Result }) {
+  const { respondents, audience } = result
+  if (respondents.length === 0 && !audience?.pending.length) return null
+  return (
+    <div className="flex flex-col gap-4 rounded-[var(--radii-lg)] border border-[var(--colors-border-neutral)] p-4 md:p-6">
+      <People title="응답한 사람" logins={respondents} tone="success" empty="아직 없어요" />
+      {audience && audience.pending.length > 0 && <People title="아직 응답하지 않은 사람" logins={audience.pending} tone="neutral" />}
+      {audience && audience.teams.length > 0 && (
+        <Text size="sm" tone="neutral" muted>
+          팀으로 지정한 대상({audience.teams.map((t) => `@${t}`).join(', ')})은 구성원 명단이 없어 아직 응답하지 않은 사람에 넣지 못해요.
+        </Text>
+      )}
+      <Text size="xs" tone="neutral" muted>
+        누가 어떤 답을 했는지는 보여 주지 않아요.
+      </Text>
+    </div>
+  )
+}
+
+function People({ title, logins, tone, empty }: { title: string; logins: string[]; tone: 'success' | 'neutral'; empty?: string }) {
+  return (
+    <div className="flex flex-col gap-2.5">
+      <div className="flex items-center gap-2">
+        <Text size="sm" weight="semibold" tone="neutral">
+          {title}
+        </Text>
+        <Text size="sm" tone="neutral" muted>
+          {logins.length}명
+        </Text>
+      </div>
+      {logins.length ? (
+        <div className="flex flex-wrap gap-1.5">
+          {logins.map((login) => (
+            <Tag key={login} tone={tone}>
+              @{login}
+            </Tag>
+          ))}
+        </div>
+      ) : (
+        <Text size="sm" tone="neutral" muted>
+          {empty}
+        </Text>
+      )}
     </div>
   )
 }

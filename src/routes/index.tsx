@@ -164,7 +164,7 @@ function Welcome() {
             <Icon name="eyeOff" size="sm" tone="neutral" />
           </span>
           <Text size="sm" tone="neutral">
-            결과 화면에는 누가 답했는지 나오지 않아요. 연락이 필요한 문항만 예외이고, 그 문항에 미리 적혀 있어요.
+            결과 화면에는 누가 참여했는지만 나오고, 누가 어떤 답을 했는지는 나오지 않아요. 연락이 필요한 문항만 예외이고, 그 문항에 미리 적혀 있어요.
           </Text>
         </div>
         <div className="flex items-start gap-2.5">

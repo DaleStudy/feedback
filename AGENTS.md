@@ -43,7 +43,7 @@ bun run db:migrate:remote   # 프로덕션 D1 마이그레이션 (아래 Gotchas
 - `src/routes/_authed.tsx` 는 미로그인 사용자를 `/login` 으로 보내는 UX 가드일 뿐이다. **보안 경계는 서버 함수의 `authMiddleware`** (`src/server/auth/middleware.ts`). 데이터를 만지는 서버 함수에는 전부 붙인다. 예외는 `getSurveyPreview` 하나 — 로그인 전 소개와 SNS 미리보기용으로 제목·설명·마감만 준다.
 - 서버 함수는 `createServerFn` + `.validator()` + `.handler()`. 바인딩은 `import { env } from 'cloudflare:workers'` — `env.DB`, 시크릿은 `env.GITHUB_CLIENT_ID` 등 (`src/env.d.ts` 에서 타입 보강).
 - 세션은 D1 `sessions` 테이블의 opaque id 를 `__Host-session` HttpOnly 쿠키에 담는다. 30일.
-- 응답자는 `responses.user_id`. 익명 모드는 없다 — GitHub 로 로그인해 답하는 설문을 익명이라 믿는 사람은 드물고, 익명 분기(HMAC 키·잠금·안내 문구)의 비용이 컸다. 실명이 부담스럽다는 의견이 나오면 다시 넣는다. 대신 결과 화면(`getSurveyResults`)은 누가 답했는지 돌려주지 않는다. 예외는 `questions.identified` 문항(운영진 모집처럼 연락해야 하는 문항)뿐이다.
+- 응답자는 `responses.user_id`. 익명 모드는 없다 — GitHub 로 로그인해 답하는 설문을 익명이라 믿는 사람은 드물고, 익명 분기(HMAC 키·잠금·안내 문구)의 비용이 컸다. 실명이 부담스럽다는 의견이 나오면 다시 넣는다. 대신 결과 화면(`getSurveyResults`)은 누가 참여했는지(이름순 명단, `invited` 설문은 아직 안 한 사람)만 주고 누가 무엇을 답했는지는 잇지 않는다 — 참여 독려에는 명단이 필요하지만 답과 이어지면 솔직한 피드백이 줄어든다. 예외는 `questions.identified` 문항(운영진 모집처럼 연락해야 하는 문항)뿐이다.
 - 문항 유형은 `src/questions/registry.tsx` 에 모여 있다. 검증(`validateAnswer`)·응답 UI(`QuestionInput`)·결과 UI(`QuestionResult`, 숫자형/서술형 구역 `resultSection`)·응답 화면의 동작(자동 넘김·조작 안내 `questionBehavior`, 예상 시간 `estimateMinutes`)은 전부 registry 를 거친다. 유형별 `switch` 를 다른 곳에 만들지 않는다.
 - 응답 화면(`/$surveyId`)과 편집 화면(`/$surveyId/edit`)은 `staticData: { bare: true }` 로 사이트 헤더 없이 화면 전체를 쓴다 (`__root.tsx` 가 읽는다).
 - 응답 화면은 로그인 가드(`_authed`) 밖에 있다. 로그인 전에는 소개와 로그인 링크를 보여 주고, SNS 미리보기 봇도 제목·설명을 읽는다. 링크 미리보기가 뜨려면 이 라우트를 가드 안으로 옮기면 안 된다.

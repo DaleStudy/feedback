@@ -3,7 +3,7 @@ import { notFound } from '@tanstack/react-router'
 import { env } from 'cloudflare:workers'
 import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import { getDb } from '@/db'
-import { type QuestionType, answers, questions, responses, surveys, users } from '@/db/schema'
+import { type QuestionType, answers, questions, responses, surveyInvitees, surveys, users } from '@/db/schema'
 import { canRespond, invitedSurveyIds, isEditor } from '../access'
 import { authMiddleware } from '../auth/middleware'
 import { isClosed } from '@/lib/kst'
@@ -177,19 +177,36 @@ export const getSurveyResults = createServerFn({ method: 'GET' })
       byQuestion.set(a.questionId, [...(byQuestion.get(a.questionId) ?? []), a.value])
     }
 
+    const logins = new Map(
+      (
+        await db
+          .select({ responseId: responses.id, login: users.login })
+          .from(responses)
+          .innerJoin(users, eq(users.id, responses.userId))
+          .where(eq(responses.surveyId, survey.id))
+      ).map((r) => [r.responseId, r.login]),
+    )
+    // 누가 답했는지(참여)는 보여 주되 누가 무엇을 답했는지는 잇지 않는다: 이름순으로만 주고 제출 시각·응답 id 는 붙이지 않는다.
+    const byName = (a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase())
+    const respondents = [...logins.values()].sort(byName)
+    // 지정한 사람만(invited) 설문: 개인으로 지정한 사람 중 아직 안 한 사람. 팀 구성원은 명단이 없어 셀 수 없다.
+    const invitees = survey.visibility === 'invited' ? await db.select().from(surveyInvitees).where(eq(surveyInvitees.surveyId, survey.id)) : []
+    const answered = new Set(respondents.map((l) => l.toLowerCase()))
+    const audience =
+      survey.visibility === 'invited'
+        ? {
+            pending: invitees
+              .filter((i) => i.kind === 'user' && !answered.has(i.name.toLowerCase()))
+              .map((i) => i.name)
+              .sort(byName),
+            teams: invitees.filter((i) => i.kind === 'team').map((i) => i.name),
+          }
+        : null
+
     // 실명 문항(identified)의 답에만 응답자 아이디를 붙인다. 나머지 문항은 누가 답했는지 주지 않는다.
     const identifiedIds = new Set(surveyQuestions.filter((q) => q.identified).map((q) => q.id))
     const named = new Map<number, Array<{ login: string; value: string }>>()
     if (identifiedIds.size) {
-      const logins = new Map(
-        (
-          await db
-            .select({ responseId: responses.id, login: users.login })
-            .from(responses)
-            .innerJoin(users, eq(users.id, responses.userId))
-            .where(eq(responses.surveyId, survey.id))
-        ).map((r) => [r.responseId, r.login]),
-      )
       for (const a of allAnswers) {
         if (!identifiedIds.has(a.questionId)) continue
         named.set(a.questionId, [...(named.get(a.questionId) ?? []), { login: logins.get(a.responseId) ?? '?', value: a.value }])
@@ -212,8 +229,9 @@ export const getSurveyResults = createServerFn({ method: 'GET' })
       title: survey.title,
       closesAt: survey.closesAt,
       closed: isClosed(survey.closesAt),
-      // 누가 답했는지는 주지 않는다. 답변만 문항별로 모은다.
       responseCount: surveyResponses.length,
+      respondents,
+      audience,
       table,
       questions: surveyQuestions.map((q) => ({
         id: q.id,
