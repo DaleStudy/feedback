@@ -119,7 +119,7 @@
 
 공통 문항은 `required` 만 덮어쓸 수 있다. 문구와 `config`(보기·척도)는 덮어쓸 수 없다 — 다르면 같은 문항이 아니다.
 
-공통 문항의 **문구나 보기를 고치는 것은 이전 기수와의 비교를 끊는 일**이다. `src/questions/common.test.ts` 가 블로그 스터디 vars 로 렌더링한 결과를 고정해 두고 있으니, 이 테스트가 깨지면 그 뜻이다. 꼭 고쳐야 하면 새 `key` 로 추가하고 옛 것은 남긴다.
+공통 문항의 **문구나 보기를 고치는 것은 이전 기수와의 비교를 끊는 일**이다. `src/questions/common.test.ts` 가 블로그 스터디 vars 로 렌더링한 결과를 고정해 두고 있으니, 이 테스트가 깨지면 그 뜻이다. 숫자로 비교하는 척도·선택 문항을 꼭 고쳐야 하면 새 `key` 로 추가하고 옛 것은 남긴다. 비교하지 않는 서술형 문구를 다듬는 것(`survey_feedback` 처럼)은 같은 `key` 로 고쳐도 된다. 응답이 있는 설문의 문구는 잠겨 있어 바뀌지 않고, 복제로 만드는 새 설문부터 새 문구가 들어간다(`copyQuestions`).
 
 ## 저장 구조
 
@@ -156,7 +156,7 @@ export const multi: QuestionTypeDef<MultiConfig> = {
   name: '복수 선택', // 편집 화면의 유형 선택에 보이는 이름
   answerSeconds: 20, // 응답 화면의 "약 N분" 계산에 쓰는 한 문항당 초
   autoAdvance: false, // true 면 고르는 순간 다음 질문으로 넘어간다 (척도·선택). 여러 개를 고르는 유형은 false
-  hint: '⌘/Ctrl + Enter 로 다음', // 확인 버튼 옆의 조작 안내
+  hint: '⌘/Ctrl + Enter 로 다음', // 입력 아래에 보이는 조작 안내 (autoAdvance 유형은 확인 버튼 없이 이 안내만)
   defaultConfig: { options: [] },
   // 운영진이 저장하려는 config 검사
   validateConfig: (config) => (config.options.length >= 2 ? null : '보기를 두 개 이상 적어주세요'),

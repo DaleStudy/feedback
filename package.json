@@ -13,9 +13,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply feedback --local",
     "db:migrate:remote": "wrangler d1 migrations apply feedback --remote",
-    "db:migrate:preview": "wrangler d1 migrations apply feedback --remote --preview",
-    "db:seed:local": "bun scripts/seed-survey.ts",
-    "db:seed:remote": "bun scripts/seed-survey.ts --remote"
+    "db:migrate:preview": "wrangler d1 migrations apply feedback-preview --remote --env migrate-preview",
+    "db:seed:local": "bun scripts/seed-survey.ts"
   },
   "dependencies": {
     "@tanstack/react-router": "^1.170.38",

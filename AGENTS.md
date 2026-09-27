@@ -16,7 +16,7 @@ bun run build
 bun run test                # tsc --noEmit + bun test
 bun run cf-typegen          # wrangler.jsonc 변경 후 worker-configuration.d.ts 재생성
 bun run db:migrate:local    # 로컬 D1 마이그레이션
-bun run db:seed:local <json># 설문 JSON(편집자·문항)을 로컬 D1 에 넣기 (seed/example.json 참고)
+bun run db:seed:local <json> # 설문 JSON(편집자·문항)을 로컬 D1 에 넣기 (seed/example.json)
 bunx drizzle-kit generate --name <desc>   # 스키마 변경 후 마이그레이션 생성
 bun run db:migrate:remote   # 프로덕션 D1 마이그레이션 (아래 Gotchas 의 순서를 지킨다)
 bun run db:migrate:preview  # 미리보기 D1 마이그레이션
@@ -25,22 +25,18 @@ bun run deploy:preview      # 지금 브랜치의 미리보기 수동 배포 (�
 
 ## Local setup
 
-- 로컬 시크릿은 `.dev.vars` (git 에 올라가지 않음): `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` — DaleStudy GitHub App 의 Client ID·secret.
-- GitHub App 의 Callback URL 에 `http://localhost:3000/auth/callback` 이 등록돼 있어야 한다.
+- 로컬 시크릿은 `.dev.vars` (git 에 올라가지 않음): `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` — DaleStudy GitHub App 의 Client ID·secret. 없으면 로그인 대신 `users`·`sessions` 에 행을 넣고 `Cookie: __Host-session=<id>` 로 확인한다(아래 Gotchas). 실제 GitHub 로그인은 PR 미리보기에서 된다.
 - `__Host-` 접두사 쿠키는 Secure 가 필수라, localhost 를 secure context 로 취급하는 Chrome/Firefox 에서 개발한다.
-- seed JSON(`seed/*.json`, 형식은 `seed/example.json`): `editors` 가 편집자, `survey.id` 를 빼면 nanoid 로 만든다. 같은 id 가 있으면 실패한다. 문항은 `{ "common": "<key>", "required"? }`(공통 문항, 문구는 `vars` 로 채움) 또는 `{ "type", "label", "required"?, "config"? }`(이 설문만의 문항). 유형별 저장값·검증·`config` 는 `docs/questions.md`.
+- seed JSON(`seed/*.json`, 형식은 `seed/example.json`)은 로컬 D1 용이다. 프로덕션 설문은 화면에서 만들거나 복제한다. `editors` 가 편집자, `survey.id` 를 빼면 nanoid 로 만든다. 같은 id 가 있으면 실패한다. 문항은 `{ "common": "<key>", "required"? }`(공통 문항, 문구는 `vars` 로 채움) 또는 `{ "type", "label", "required"?, "config"? }`(이 설문만의 문항). 유형별 저장값·검증·`config` 는 `docs/questions.md`.
 
 ## Deployment
 
-- 변경은 브랜치 → PR → squash merge 로 넣는다. `main` 에 직접 push·force push 하지 않는다 — 다른 사람과 함께 쓰는 저장소가 됐고, 머지 기록이 곧 배포 기록이다.
+- 변경은 브랜치 → PR → 미리보기에서 확인 → squash merge. `main` 에 직접 push·force push 하지 않는다 — 다른 사람과 함께 쓰는 저장소가 됐고, 머지 기록이 곧 배포 기록이다. 머지하면 브랜치는 GitHub 이 지우고(`delete_branch_on_merge`), 미리보기는 `wrangler preview delete --name <브랜치> -y` 로 지운다.
 - `main` 에 머지되면 Cloudflare Workers Builds 가 `bun run build` → `npx wrangler deploy`. 빌드 결과는 커밋의 check run `Workers Builds: feedback` 으로 확인한다. `bun run deploy` 는 수동 fallback.
-- **미리보기**: `main` 이 아닌 브랜치를 push 하면 Workers Builds 가 `bun run db:migrate:preview && bun run deploy:preview`(= `wrangler preview`, Workers Previews)로 브랜치마다 `https://<브랜치>.feedback-preview.dalestudy.com` 을 만든다. PR 은 머지 전에 여기서 눌러 본다.
-  - 설정은 `wrangler.jsonc` 의 `previews` 블록(D1 을 다시 선언해야 한다 — 상속되지 않는다)과 `previews_enabled` 커스텀 도메인 route. 미리보기 D1 은 `feedback-preview` 하나를 모든 브랜치가 함께 쓴다. 프로덕션 응답을 건드리지 않는 게 목적이다.
-  - 마이그레이션은 `d1_databases[].preview_database_id` + `--preview` 로 미리보기 D1 에 적용한다(`db:migrate:preview`). `previews` 블록의 D1 은 `d1 migrations apply` 가 찾지 못한다.
-  - 시크릿은 `wrangler preview base-config secret put <KEY>`. base config 는 새로 만들어지는 미리보기에만 들어간다 — 그 전에 있던 미리보기에서 GitHub 로 `client_id=undefined` 가 가면 `wrangler preview secret put <KEY> --name <브랜치>` 로 넣는다.
-  - GitHub App 콜백은 `https://feedback-preview.dalestudy.com/auth/callback` 을 와일드카드(하위 도메인 허용)로 등록해 브랜치 주소마다 로그인된다.
-  - `versions upload` 의 버전 URL 은 쓰지 않는다 — 프로덕션 D1 을 쓴다(Cloudflare 문서도 PR 테스트에 쓰지 말라고 한다). 그래서 `preview_urls` 도 켜지 않는다.
-  - Workers Builds 는 브랜치마다 트리거를 만들며 그때의 미리보기 명령을 복사해 둔다. 대시보드의 미리보기 명령을 바꾸면 이미 있던 브랜치에는 적용되지 않는다.
+- **미리보기**: `main` 이 아닌 브랜치를 push 하면 Workers Builds 가 `bun run db:migrate:preview && bun run deploy:preview`(Workers Previews, `wrangler preview`)로 `https://<브랜치>.feedback-preview.dalestudy.com` 을 만든다. 모든 미리보기는 D1 `feedback-preview` 를 함께 쓴다 — 프로덕션 응답을 건드리지 않는 게 목적이다.
+  - `wrangler.jsonc` 의 `previews` 블록에 D1 을 다시 선언한다(상속되지 않는다). 마이그레이션은 마이그레이션 전용 환경 `env.migrate-preview` 로 한다 — `previews` 블록의 D1 은 `d1 migrations apply` 가 찾지 못하고, `preview_database_id` 를 쓰면 로컬 개발까지 그 id 의 빈 DB 를 쓰게 된다.
+  - `versions upload` 의 버전 URL 은 프로덕션 D1 을 써서 쓰지 않는다(`preview_urls` 도 끔).
+  - 브랜치별 트리거와 시크릿은 브랜치가 처음 빌드될 때의 base config 를 복사한다. 대시보드의 미리보기 명령이나 `wrangler preview base-config secret put` 을 바꾼 뒤에는 기존 브랜치에 따로 넣는다(`wrangler preview secret put <KEY> --name <브랜치>`). 증상은 GitHub 로 `client_id=undefined` 가 가는 것.
 - 이미 설정된 것: D1 `feedback`·`feedback-preview`(APAC, id 는 `wrangler.jsonc`), 시크릿 `GITHUB_CLIENT_ID`·`GITHUB_CLIENT_SECRET`, 커스텀 도메인(`wrangler.jsonc` 의 `routes`), 빌드 변수 `BUN_VERSION=1.4.0`(빌드 이미지 기본 bun 은 lockfile v2 를 못 읽는다. 로컬 bun 을 올리면 같이 올린다).
 - GitHub App 의 Callback URL 은 localhost, `https://feedback.dalestudy.com/auth/callback`, `https://feedback-preview.dalestudy.com/auth/callback`(와일드카드) 셋. 앱은 **공개(public)** 여야 한다 — 비공개 앱은 소유 조직 멤버만 authorize 할 수 있어서 조직 밖 참가자가 GitHub 의 authorize 페이지에서 404 를 본다(우리 로그에는 안 남는다).
 - 저장소를 새로 만들면 Workers Builds 연결이 끊긴다(대시보드에는 이름이 그대로 보여도). 대시보드에서 Disconnect → Connect 로 다시 잇는다.
@@ -77,9 +73,8 @@ bun run deploy:preview      # 지금 브랜치의 미리보기 수동 배포 (�
 - **`.dev.vars` 변경은 dev 서버 재시작 필요.**
 - **drizzle-kit 이 만든 SQLite rename/재생성 SQL 은 D1 에서 깨질 수 있다.** 트랜잭션 안의 `PRAGMA foreign_keys=OFF` 가 무시된다. 생성된 SQL 을 읽고 네이티브 `ALTER TABLE … RENAME` 으로 바꿔 쓴 적이 두 번 있다 (`0004`, `0006`). rename 프롬프트는 add/drop 두 마이그레이션으로 나눠도 된다.
 - **스키마 PR 은 머지 → 빌드 완료 확인 → `bun run db:migrate:remote` 를 바로.** 컬럼 추가는 코드보다 먼저 돌려도 되지만, 파괴적 마이그레이션은 새 코드가 배포된 뒤에 돌린다.
-- daleui 에 `Textarea`·`Switch` 가 없어 `src/components/Textarea.tsx`·`Switch.tsx` 로 임시 대체 (daleui #1093·#1098). daleui 에 추가되면 교체.
 - **Tailwind 의 base 레이어가 daleui 의 reset 레이어보다 뒤라** 그대로 두면 글꼴을 시스템 글꼴로 덮어쓴다. `src/styles.css` 의 `@theme` 에서 `--font-sans` 를 daleui 토큰으로 맞춘다.
-- **daleui `Link` 는 `className` 을 받으면 자기 스타일 클래스를 버린다.** 라우터가 활성 링크에 넘기는 `className: 'active'` 때문에 `AppLink` 는 `activeProps` 를 비운다. daleui 컴포넌트에 `className` 을 넘길 일이 있으면 같은 문제를 의심한다. daleui #1300 이 릴리스되면 우회를 걷어낸다.
+- **daleui `Link` 는 `className` 을 받으면 자기 스타일 클래스를 버린다.** 라우터가 활성 링크에 넘기는 `className: 'active'` 때문에 `AppLink` 는 `activeProps` 를 비운다. daleui 컴포넌트에 `className` 을 넘길 일이 있으면 같은 문제를 의심한다 (고침: daleui #1300).
 - **`--colors-bg-neutral` 은 라이트 테마에서 흰색이다.** 옅은 회색 면이 아니라 컴포넌트 기본 배경(`Card`·`TextInput` 바탕) 토큰이다 (daleui #363). 회색 면이 필요하면 테두리(`--colors-border-neutral`)로 구분한다. 회색 면 토큰은 daleui #1303.
 - 로컬에서 GitHub 로그인 없이 인증 흐름을 확인하려면 `users` 와 `sessions` 에 행을 직접 넣고 `Cookie: __Host-session=<id>` 로 요청한다.
 
