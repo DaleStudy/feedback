@@ -32,7 +32,8 @@ bun run deploy:preview      # 지금 브랜치의 미리보기 수동 배포 (�
 
 ## Deployment
 
-- `main` 에 push 하면 Cloudflare Workers Builds 가 `bun run build` → `npx wrangler deploy`. 빌드 결과는 커밋의 check run `Workers Builds: feedback` 으로 확인한다. `bun run deploy` 는 수동 fallback.
+- 변경은 브랜치 → PR → squash merge 로 넣는다. `main` 에 직접 push·force push 하지 않는다 — 다른 사람과 함께 쓰는 저장소가 됐고, 머지 기록이 곧 배포 기록이다.
+- `main` 에 머지되면 Cloudflare Workers Builds 가 `bun run build` → `npx wrangler deploy`. 빌드 결과는 커밋의 check run `Workers Builds: feedback` 으로 확인한다. `bun run deploy` 는 수동 fallback.
 - **미리보기**: `main` 이 아닌 브랜치를 push 하면 Workers Builds 가 `bun run db:migrate:preview && bun run deploy:preview`(= `wrangler preview`, Workers Previews)로 브랜치마다 `https://<브랜치>.feedback-preview.dalestudy.com` 을 만든다. PR 은 머지 전에 여기서 눌러 본다.
   - 설정은 `wrangler.jsonc` 의 `previews` 블록(D1 을 다시 선언해야 한다 — 상속되지 않는다)과 `previews_enabled` 커스텀 도메인 route. 미리보기 D1 은 `feedback-preview` 하나를 모든 브랜치가 함께 쓴다. 프로덕션 응답을 건드리지 않는 게 목적이다.
   - 마이그레이션은 `d1_databases[].preview_database_id` + `--preview` 로 미리보기 D1 에 적용한다(`db:migrate:preview`). `previews` 블록의 D1 은 `d1 migrations apply` 가 찾지 못한다.
@@ -76,14 +77,21 @@ bun run deploy:preview      # 지금 브랜치의 미리보기 수동 배포 (�
 - **`.dev.vars` 변경은 dev 서버 재시작 필요.**
 - **drizzle-kit 이 만든 SQLite rename/재생성 SQL 은 D1 에서 깨질 수 있다.** 트랜잭션 안의 `PRAGMA foreign_keys=OFF` 가 무시된다. 생성된 SQL 을 읽고 네이티브 `ALTER TABLE … RENAME` 으로 바꿔 쓴 적이 두 번 있다 (`0004`, `0006`). rename 프롬프트는 add/drop 두 마이그레이션으로 나눠도 된다.
 - **스키마 PR 은 머지 → 빌드 완료 확인 → `bun run db:migrate:remote` 를 바로.** 컬럼 추가는 코드보다 먼저 돌려도 되지만, 파괴적 마이그레이션은 새 코드가 배포된 뒤에 돌린다.
-- daleui 에 `Textarea`·`Switch` 가 없어 `src/components/Textarea.tsx`·`Switch.tsx` 로 임시 대체. daleui 에 추가되면 교체.
+- daleui 에 `Textarea`·`Switch` 가 없어 `src/components/Textarea.tsx`·`Switch.tsx` 로 임시 대체 (daleui #1093·#1098). daleui 에 추가되면 교체.
 - **Tailwind 의 base 레이어가 daleui 의 reset 레이어보다 뒤라** 그대로 두면 글꼴을 시스템 글꼴로 덮어쓴다. `src/styles.css` 의 `@theme` 에서 `--font-sans` 를 daleui 토큰으로 맞춘다.
-- **daleui `Link` 는 `className` 을 받으면 자기 스타일 클래스를 버린다.** 라우터가 활성 링크에 넘기는 `className: 'active'` 때문에 `AppLink` 는 `activeProps` 를 비운다. daleui 컴포넌트에 `className` 을 넘길 일이 있으면 같은 문제를 의심한다.
-- **`--colors-bg-neutral` 은 라이트 테마에서 흰색이다.** 회색 면이 필요하면 테두리(`--colors-border-neutral`)로 구분한다.
+- **daleui `Link` 는 `className` 을 받으면 자기 스타일 클래스를 버린다.** 라우터가 활성 링크에 넘기는 `className: 'active'` 때문에 `AppLink` 는 `activeProps` 를 비운다. daleui 컴포넌트에 `className` 을 넘길 일이 있으면 같은 문제를 의심한다. daleui #1300 이 릴리스되면 우회를 걷어낸다.
+- **`--colors-bg-neutral` 은 라이트 테마에서 흰색이다.** 옅은 회색 면이 아니라 컴포넌트 기본 배경(`Card`·`TextInput` 바탕) 토큰이다 (daleui #363). 회색 면이 필요하면 테두리(`--colors-border-neutral`)로 구분한다. 회색 면 토큰은 daleui #1303.
 - 로컬에서 GitHub 로그인 없이 인증 흐름을 확인하려면 `users` 와 `sessions` 에 행을 직접 넣고 `Cookie: __Host-session=<id>` 로 요청한다.
 
 ## Deferred
 
 - **조직 멤버 게이트** — 로그인 시 DaleStudy 조직 멤버만 통과시키는 것. 지금 켜면 실제 참가자가 막힌다(블로그 1기 참가자 17명 중 7명이 조직 멤버가 아니다). 참여 절차에 조직 초대를 넣은 뒤 켠다. 앱에 members 권한이 있으니 로그인 콜백에서 `GET /user/memberships/orgs/DaleStudy` 로 확인하면 된다(`isTeamMember` 와 같은 자리).
-- **daleui 갭** — `Textarea`·`Switch`(임시 구현), 결과·관리 화면에 쓸 `Table`, 설문 보기용 큰 선택 타일(지금은 `Button` 에 `role="radio"`), 라우터와 붙는 버튼 모양 링크, 아이콘 `plus`·`calendar`·`link`·`copy`(`link` 는 관리 목록에서 `lucide-react` 로 직접 쓴다 — daleui 가 쓰는 아이콘 세트라 모양이 같다). daleui 에 추가되면 교체한다.
+- **daleui 갭** — 달레 UI 에 들어오면 임시 구현·우회를 걷어낸다. 올린 것과 걸린 곳:
+  - #1299 아이콘 `calendar`·`link`·`plus` — 관리 목록의 링크 복사가 `lucide-react` 를 직접 쓴다. 릴리스되면 `<Icon name="link" />` 로 바꾸고 `lucide-react` 의존성을 뺀다.
+  - #1300 `className` 병합 — `AppLink` 의 `activeProps` 비우기 (Gotchas 참고).
+  - #1093 `Textarea`, #1098 `Switch` — `src/components/` 의 임시 구현.
+  - #1301 설문 보기용 큰 선택 타일 — 지금은 `Button` 에 `role="radio"`.
+  - #1231 `asChild` — 버튼 모양 링크(`/login`, 홈 카드의 "피드백 남기기")를 토큰으로 흉내 낸다.
+  - #1203 본문 `keep-all` — 한국어 본문을 감싸는 곳에 `break-keep` 을 준다.
+  - #1302 `ghost`/`outline` 비활성 모양 — 쓸 수 없는 버튼은 숨긴다.
 - **Workers Builds watch paths** — 문서만 바뀐 커밋도 빌드가 돈다. `docs/**`, `*.md` 를 빼면 되지만 빌드가 1분이라 급하지 않다.
