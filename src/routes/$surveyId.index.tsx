@@ -1,6 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
-import { Button, Heading, Icon, Link as DaleLink, Tag, Text } from 'daleui'
+import { Button, Heading, Icon, Tag, Text } from 'daleui'
 import { AppLink } from '@/components/AppLink'
 import { LinkifiedText } from '@/components/LinkifiedText'
 import { Logo } from '@/components/Logo'
@@ -245,9 +245,12 @@ function SurveyFlow({ survey, previewMode }: { survey: SurveyData; previewMode: 
             </div>
           )}
           <div className="flex flex-wrap items-center gap-4">
-            <Button tone="brand" size="lg" loading={submitting} onClick={() => goNext()}>
-              {step === total ? (editing ? '고친 답 제출하기' : '제출하기') : '확인'} <Icon name="check" size="sm" />
-            </Button>
+            {/* 고르면 넘어가는 문항은 확인 버튼이 필요 없다. 마지막 문항은 제출을 직접 누르게 한다 */}
+            {(step === total || !questionBehavior(current.type).autoAdvance) && (
+              <Button tone="brand" size="lg" loading={submitting} onClick={() => goNext()}>
+                {step === total ? (editing ? '고친 답 제출하기' : '제출하기') : '확인'} <Icon name="check" size="sm" />
+              </Button>
+            )}
             <span className="hidden md:inline">
               <Text size="sm" tone="neutral" muted>
                 {questionBehavior(current.type).hint}
@@ -266,9 +269,11 @@ function SurveyFlow({ survey, previewMode }: { survey: SurveyData; previewMode: 
       nav={
         current && (
           <nav aria-label="질문 이동" className="flex justify-end gap-2 pb-8">
-            <Button tone="neutral" variant="outline" size="sm" disabled={step <= 1} onClick={goPrev}>
-              <Icon name="chevronLeft" size="sm" /> 이전
-            </Button>
+            {step > 1 && (
+              <Button tone="neutral" variant="outline" size="sm" onClick={goPrev}>
+                <Icon name="chevronLeft" size="sm" /> 이전
+              </Button>
+            )}
             <Button tone="neutral" variant="outline" size="sm" onClick={() => goNext()}>
               다음 <Icon name="chevronRight" size="sm" />
             </Button>
@@ -303,10 +308,23 @@ function GuestIntro({ preview }: { preview: Preview }) {
         {preview.closed ? (
           <Text tone="neutral">마감된 설문이에요.</Text>
         ) : (
-          // /login 은 서버 라우트라 라우터 링크가 아니라 평범한 링크로 간다
-          <DaleLink href={`/login?redirect=${encodeURIComponent(`/${preview.id}`)}`} tone="brand" size="lg" underline={false}>
-            <Icon name="GitHub" size="sm" /> GitHub로 로그인하고 시작하기
-          </DaleLink>
+          <div className="flex flex-col gap-3 pt-2">
+            {/* /login 은 서버 라우트라 라우터 링크가 아니라 평범한 링크로 간다. daleui Button 은 링크가 될 수 없어 모양만 맞춘다 */}
+            <a
+              href={`/login?redirect=${encodeURIComponent(`/${preview.id}`)}`}
+              className="inline-flex h-13 items-center gap-2 self-start rounded-[var(--radii-md)] bg-[var(--colors-bg-solid-brand)] px-6 text-lg font-semibold text-[var(--colors-fg-solid-brand)] no-underline hover:bg-[var(--colors-bg-solid-brand-hover)]"
+            >
+              <Icon name="GitHub" size="sm" /> GitHub로 로그인하고 시작하기
+            </a>
+            <div className="flex items-start gap-2 break-keep">
+              <span className="shrink-0 pt-0.5">
+                <Icon name="eyeOff" size="sm" tone="neutral" />
+              </span>
+              <Text size="sm" tone="neutral">
+                결과에는 누가 무엇을 답했는지 나오지 않아요. 로그인은 한 사람이 한 번만 답하게 하는 데 써요.
+              </Text>
+            </div>
+          </div>
         )}
       </div>
     </Stage>

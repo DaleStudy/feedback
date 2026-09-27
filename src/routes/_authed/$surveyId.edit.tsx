@@ -74,42 +74,79 @@ function EditSurveyPage() {
 
   return (
     <div className="flex h-screen flex-col bg-[var(--colors-app-bg)] text-[var(--colors-fg-neutral)]">
-      <header className="flex h-16 shrink-0 items-center gap-4 border-b border-[var(--colors-border-neutral)] px-6">
-        <AppLink to="/manage" tone="neutral" size="sm" underline={false}>
-          <Icon name="chevronLeft" size="sm" /> 설문 관리
+      {/* 좁은 화면에서는 저장만 남기고 미리보기·링크 복사는 관리 목록에 맡긴다 */}
+      <header className="flex h-16 shrink-0 items-center gap-2 border-b border-[var(--colors-border-neutral)] px-3 md:gap-4 md:px-6">
+        <AppLink to="/manage" tone="neutral" size="sm" underline={false} aria-label="설문 관리로">
+          <Icon name="chevronLeft" size="sm" /> <span className="hidden md:inline">설문 관리</span>
         </AppLink>
-        <div className="h-6 w-px bg-[var(--colors-border-neutral)]" />
-        <Text weight="semibold" tone="neutral">
-          {fields.title || '(제목 없음)'}
-        </Text>
-        <Tag tone={survey.locked ? 'warning' : 'neutral'}>
-          {survey.locked ? `응답 ${survey.responseCount}건 · 문항 잠김` : '응답 0건 · 고칠 수 있어요'}
-        </Tag>
-        <div className="ml-auto flex items-center gap-3">
-          {error ? (
-            <Text size="sm" tone="danger">
-              {error}
+        <div className="hidden h-6 w-px bg-[var(--colors-border-neutral)] md:block" />
+        <div className="flex min-w-0 flex-col md:flex-row md:items-center md:gap-4">
+          <span className="truncate">
+            <Text weight="semibold" tone="neutral">
+              {fields.title || '(제목 없음)'}
             </Text>
+          </span>
+          <span className="whitespace-nowrap md:hidden">
+            <Text size="xs" tone="neutral">
+              {survey.locked ? `응답 ${survey.responseCount}건 · 문항 잠김` : '응답 0건 · 고칠 수 있어요'}
+            </Text>
+          </span>
+          <span className="hidden shrink-0 whitespace-nowrap md:inline">
+            <Tag tone={survey.locked ? 'warning' : 'neutral'}>
+              {survey.locked ? `응답 ${survey.responseCount}건 · 문항 잠김` : '응답 0건 · 고칠 수 있어요'}
+            </Tag>
+          </span>
+        </div>
+        <div className="ml-auto flex shrink-0 items-center gap-3">
+          {error ? (
+            <span className="hidden md:inline">
+              <Text size="sm" tone="danger">
+                {error}
+              </Text>
+            </span>
           ) : (
             dirty && (
-              <Text size="sm" tone="neutral" muted>
-                저장하지 않은 변경이 있어요
-              </Text>
+              <span className="hidden lg:inline">
+                <Text size="sm" tone="neutral" muted>
+                  저장하지 않은 변경이 있어요
+                </Text>
+              </span>
             )
           )}
-          <AppLink to="/$surveyId" params={{ surveyId: survey.id }} search={{ preview: true }} tone="brand" size="sm">
-            미리보기
-          </AppLink>
-          <Button tone="neutral" variant="outline" size="sm" onClick={copyLink}>
-            {copy === 'copied' ? '복사했어요' : copy === 'failed' ? '복사하지 못했어요' : '링크 복사'}
-          </Button>
-          <Button tone="brand" size="sm" disabled={!dirty} loading={saving} onClick={save}>
-            저장
-          </Button>
+          <span className="hidden md:inline">
+            <AppLink to="/$surveyId" params={{ surveyId: survey.id }} search={{ preview: true }} tone="brand" size="sm">
+              미리보기
+            </AppLink>
+          </span>
+          <span className="hidden md:inline">
+            <Button tone="neutral" variant="outline" size="sm" onClick={copyLink}>
+              {copy === 'copied' ? '복사했어요' : copy === 'failed' ? '복사하지 못했어요' : '링크 복사'}
+            </Button>
+          </span>
+          {/* 바뀐 게 없으면 회색 버튼 대신 상태를 글자로 */}
+          {dirty || saving ? (
+            <Button tone="brand" size="sm" loading={saving} onClick={save}>
+              저장
+            </Button>
+          ) : (
+            <span className="flex items-center gap-1 whitespace-nowrap">
+              <Icon name="check" size="sm" tone="success" />
+              <Text size="sm" tone="neutral">
+                저장됨
+              </Text>
+            </span>
+          )}
         </div>
       </header>
+      {error && (
+        <div role="alert" className="border-b border-[var(--colors-border-neutral)] px-3 py-2 md:hidden">
+          <Text size="sm" tone="danger">
+            {error}
+          </Text>
+        </div>
+      )}
 
-      <div role="tablist" aria-label="편집 화면" className="flex h-12 shrink-0 gap-6 border-b border-[var(--colors-border-neutral)] px-6">
+      <div role="tablist" aria-label="편집 화면" className="flex h-12 shrink-0 gap-6 border-b border-[var(--colors-border-neutral)] px-4 md:px-6">
         <TabButton active={tab === 'questions'} onClick={() => setTab('questions')}>
           문항 {items.length}
         </TabButton>
@@ -139,7 +176,7 @@ function EditSurveyPage() {
         </>
       ) : (
         <div className="min-h-0 grow overflow-auto">
-          <div className="mx-auto flex max-w-[720px] flex-col gap-10 px-6 py-10">
+          <div className="mx-auto flex max-w-[720px] flex-col gap-10 px-4 py-8 md:px-6 md:py-10">
             <SurveySettings
               value={fields}
               onChange={(next) => {

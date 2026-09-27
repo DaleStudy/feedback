@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Checkbox, Heading, Select, Tag, Text, TextInput } from 'daleui'
+import { Button, Checkbox, Heading, Icon, Select, Tag, Text, TextInput } from 'daleui'
 import { type QuestionConfig, type QuestionType, questionTypes } from '@/db/schema'
 import { type Audience, type CommonVars, commonQuestions, commonQuestionsFor, renderLabel } from '@/questions/common'
 import { QuestionConfigEditor, QuestionInput, questionTypeName } from '@/questions/registry'
@@ -23,9 +23,11 @@ const PRESETS: Array<{ audience: Audience; label: string }> = [
   { audience: 'organizers', label: '운영 회고 기본 문항 넣기' },
 ]
 
-// Typeform 빌더처럼 왼쪽 목록 · 가운데 편집 · 오른쪽 응답 화면 미리보기
+// Typeform 빌더처럼 왼쪽 목록 · 가운데 편집 · 오른쪽 응답 화면 미리보기.
+// 좁은 화면(lg 미만)은 목록 → 문항 상세 두 단계로 나누고(detail), 미리보기는 넓은 화면(xl)에서만 보인다.
 export function SurveyBuilder({ items, onChange, vars, locked }: Props) {
   const [selected, setSelected] = useState(0)
+  const [detail, setDetail] = useState(false)
   const index = Math.min(selected, items.length - 1)
   const item = items[index]
   const varsComplete = Object.values(vars).every((v) => v.trim())
@@ -59,15 +61,20 @@ export function SurveyBuilder({ items, onChange, vars, locked }: Props) {
     if (added.length === 0) return
     onChange([...items, ...added])
     setSelected(items.length)
+    setDetail(true)
   }
   const addCustom = () => {
     onChange([...items, withUid({ type: 'long', label: '', required: true, config: null })])
     setSelected(items.length)
+    setDetail(true)
   }
 
   return (
     <div className="flex min-h-0 grow">
-      <aside aria-label="문항 목록" className="flex w-[340px] shrink-0 flex-col border-r border-[var(--colors-border-neutral)] bg-[var(--colors-bg-neutral-hover)]">
+      <aside
+        aria-label="문항 목록"
+        className={`${detail ? 'hidden' : 'flex'} w-full shrink-0 flex-col bg-[var(--colors-bg-neutral-hover)] lg:flex lg:w-[340px] lg:border-r lg:border-[var(--colors-border-neutral)]`}
+      >
         <ol className="flex grow flex-col gap-1 overflow-auto p-3">
           {items.map((q, i) => {
             const v = view(q)
@@ -76,7 +83,10 @@ export function SurveyBuilder({ items, onChange, vars, locked }: Props) {
                 <button
                   type="button"
                   aria-current={i === index}
-                  onClick={() => setSelected(i)}
+                  onClick={() => {
+                    setSelected(i)
+                    setDetail(true)
+                  }}
                   className={`flex w-full cursor-pointer gap-3 rounded-[var(--radii-md)] border p-3 text-left ${
                     i === index ? 'border-[var(--colors-border-brand)] bg-[var(--colors-app-bg)]' : 'border-transparent bg-transparent'
                   }`}
@@ -89,6 +99,9 @@ export function SurveyBuilder({ items, onChange, vars, locked }: Props) {
                       {!v.required && ' · 선택'}
                     </span>
                     <span className="line-clamp-2 text-sm leading-snug">{v.label || '(문구를 적어 주세요)'}</span>
+                  </span>
+                  <span className="ml-auto self-center lg:hidden">
+                    <Icon name="chevronRight" size="sm" tone="neutral" />
                   </span>
                 </button>
               </li>
@@ -124,25 +137,43 @@ export function SurveyBuilder({ items, onChange, vars, locked }: Props) {
 
       {item ? (
         <>
-          <section aria-label="문항 편집" className="flex w-[520px] shrink-0 flex-col gap-5 overflow-auto border-r border-[var(--colors-border-neutral)] p-8">
+          <section
+            aria-label="문항 편집"
+            className={`${detail ? 'flex' : 'hidden'} w-full min-w-0 flex-col gap-5 overflow-auto p-5 lg:flex lg:w-auto lg:grow lg:p-8 xl:w-[520px] xl:shrink-0 xl:grow-0 xl:border-r xl:border-[var(--colors-border-neutral)]`}
+          >
+            <div className="lg:hidden">
+              <Button tone="neutral" variant="ghost" size="sm" onClick={() => setDetail(false)}>
+                <Icon name="chevronLeft" size="sm" /> 문항 목록
+              </Button>
+            </div>
             <div className="flex items-center gap-2">
               <Heading level={2} size={5}>
                 {index + 1}번 문항
               </Heading>
-              {item.key !== undefined && <Tag tone="brand">공통 · {item.key}</Tag>}
+              {/* key 는 코드용 이름이라 태그에는 쓰지 않는다. 설문끼리 비교할 때 찾아볼 수 있게 툴팁으로만 */}
+              {item.key !== undefined && (
+                <span title={item.key}>
+                  <Tag tone="brand">공통 문항</Tag>
+                </span>
+              )}
             </div>
-            <Select
-              label="유형"
-              value={view(item).type}
-              disabled={locked || item.key !== undefined}
-              onChange={(e) => replace({ type: e.target.value as QuestionType, config: null })}
-            >
-              {questionTypes.map((t) => (
-                <option key={t} value={t}>
-                  {questionTypeName(t)}
-                </option>
-              ))}
-            </Select>
+            {/* 바꿀 수 없는 유형은 회색 선택 칸 대신 글자로 */}
+            {locked || item.key !== undefined ? (
+              <div className="flex flex-col gap-1">
+                <Text weight="semibold" tone="neutral">
+                  유형
+                </Text>
+                <Text tone="neutral">{questionTypeName(view(item).type)}</Text>
+              </div>
+            ) : (
+              <Select label="유형" value={item.type} onChange={(e) => replace({ type: e.target.value as QuestionType, config: null })}>
+                {questionTypes.map((t) => (
+                  <option key={t} value={t}>
+                    {questionTypeName(t)}
+                  </option>
+                ))}
+              </Select>
+            )}
             {item.key !== undefined ? (
               <TextInput
                 label="문구"
@@ -163,12 +194,17 @@ export function SurveyBuilder({ items, onChange, vars, locked }: Props) {
             <Checkbox label="필수" checked={view(item).required} disabled={locked} onChange={(checked) => replace({ required: checked })} />
             {!locked && (
               <div className="mt-auto flex gap-2">
-                <Button tone="neutral" variant="outline" size="sm" disabled={index === 0} onClick={() => move(-1)}>
-                  위로
-                </Button>
-                <Button tone="neutral" variant="outline" size="sm" disabled={index === items.length - 1} onClick={() => move(1)}>
-                  아래로
-                </Button>
+                {/* 쓸 수 없는 이동 버튼은 회색으로 두지 않고 숨긴다 */}
+                {index > 0 && (
+                  <Button tone="neutral" variant="outline" size="sm" onClick={() => move(-1)}>
+                    위로
+                  </Button>
+                )}
+                {index < items.length - 1 && (
+                  <Button tone="neutral" variant="outline" size="sm" onClick={() => move(1)}>
+                    아래로
+                  </Button>
+                )}
                 <div className="ml-auto">
                   <Button
                     tone="danger"
@@ -177,6 +213,7 @@ export function SurveyBuilder({ items, onChange, vars, locked }: Props) {
                     onClick={() => {
                       onChange(items.filter((_, i) => i !== index))
                       setSelected(Math.max(0, index - 1))
+                      setDetail(false)
                     }}
                   >
                     문항 삭제
@@ -188,7 +225,7 @@ export function SurveyBuilder({ items, onChange, vars, locked }: Props) {
           <Preview key={item.uid} n={index + 1} uid={item.uid} {...view(item)} />
         </>
       ) : (
-        <div className="flex grow items-center justify-center bg-[var(--colors-bg-brand)] p-10">
+        <div className="hidden grow items-center justify-center bg-[var(--colors-bg-brand)] p-10 lg:flex">
           <Text tone="neutral">왼쪽에서 문항을 추가하면 여기서 고치고, 응답 화면을 미리 볼 수 있어요.</Text>
         </div>
       )}
@@ -201,7 +238,7 @@ function Preview({ n, uid, type, label, config, required }: { n: number; uid: nu
   const [value, setValue] = useState('')
   const headingId = `preview-${uid}`
   return (
-    <section aria-label="응답 화면 미리보기" className="flex min-w-0 grow flex-col gap-6 bg-[var(--colors-bg-brand)] px-10 py-8">
+    <section aria-label="응답 화면 미리보기" className="hidden min-w-0 grow flex-col gap-6 bg-[var(--colors-bg-brand)] px-10 py-8 xl:flex">
       <Text size="xs" weight="semibold" tone="neutral">
         응답 화면 미리보기
       </Text>
@@ -232,7 +269,7 @@ function CommonOptions({ audience, label, usedKeys }: { audience: Audience | und
     <optgroup label={label}>
       {remaining.map((q) => (
         <option key={q.key} value={q.key}>
-          {q.key} — {q.label}
+          {q.label}
         </option>
       ))}
     </optgroup>

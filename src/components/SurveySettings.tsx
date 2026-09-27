@@ -44,14 +44,19 @@ export function SurveySettings({ value, onChange, locked }: Props) {
           onChange={(v) => set('description', v)}
           placeholder="응답자가 시작 화면에서 읽는 안내예요. 왜 묻는지 적어 주세요."
         />
-        <div className="w-60">
-          <TextInput
-            label="마감일"
-            type="date"
-            value={closesAtToKstDate(value.closesAt)}
-            onChange={(e) => set('closesAt', kstDateToClosesAt(e.target.value))}
-            helperText="그날 23:59 (한국 시간)에 마감돼요. 비우면 계속 열려 있어요. 지금 끝내려면 설문 관리에서 마감하세요"
-          />
+        <div className="flex flex-col gap-2">
+          <div className="w-60">
+            <TextInput
+              label="마감일"
+              type="date"
+              value={closesAtToKstDate(value.closesAt)}
+              onChange={(e) => set('closesAt', kstDateToClosesAt(e.target.value))}
+            />
+          </div>
+          {/* 도움말을 날짜 칸 밖에 둬서 칸 너비에 갇혀 여러 줄로 꺾이지 않게 한다 */}
+          <Text size="sm" tone="neutral">
+            그날 23:59 (한국 시간)에 마감돼요. 비우면 계속 열려 있어요. 지금 끝내려면 설문 관리에서 마감하세요.
+          </Text>
         </div>
       </section>
 

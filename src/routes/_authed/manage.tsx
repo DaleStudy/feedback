@@ -155,42 +155,37 @@ function SurveyCard({ survey, canCreate }: { survey: ManagedSurvey; canCreate: b
         <OpenSwitch surveyId={survey.id} closed={survey.closed} />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[var(--colors-border-neutral)] pt-4">
-        <div className="flex items-baseline gap-1">
-          <span className="text-2xl font-bold tabular-nums">{survey.responseCount}</span>
-          <Text size="sm" tone="neutral">
-            명 응답
-          </Text>
-        </div>
-        <div className="flex flex-wrap items-center gap-1">
+      {/* 보조 동작(링크 복사·미리보기·복제)과 주 동작(편집·결과 보기)을 나눈다. 응답 수는 결과 보기 버튼에 */}
+      <div className="flex flex-col-reverse gap-3 border-t border-[var(--colors-border-neutral)] pt-4 md:flex-row md:items-center md:justify-between">
+        <div className="-ml-2 flex flex-wrap items-center gap-1">
           <Button tone="neutral" variant="ghost" size="sm" onClick={copyLink}>
             {copy === 'copied' ? <Icon name="check" size="sm" /> : <LinkIcon size={16} aria-hidden />}
             {copy === 'copied' ? '복사했어요' : copy === 'failed' ? '복사하지 못했어요' : '링크 복사'}
+          </Button>
+          <Button tone="neutral" variant="ghost" size="sm" onClick={() => navigate({ to: '/$surveyId', params: { surveyId: survey.id }, search: { preview: true } })}>
+            <Icon name="eye" size="sm" /> 미리보기
           </Button>
           {canCreate && (
             <Button tone="neutral" variant="ghost" size="sm" onClick={() => navigate({ to: '/new', search: { from: survey.id } })}>
               복제
             </Button>
           )}
-          <Button tone="neutral" variant="ghost" size="sm" onClick={() => navigate({ to: '/$surveyId', params: { surveyId: survey.id }, search: { preview: true } })}>
-            <Icon name="eye" size="sm" /> 미리보기
-          </Button>
-          <Button
-            tone="neutral"
-            variant="outline"
-            size="sm"
-            disabled={survey.closed}
-            onClick={() => navigate({ to: '/$surveyId/edit', params: { surveyId: survey.id }, search: locked ? { tab: 'settings' } : {} })}
-          >
-            <Icon name="penLine" size="sm" /> {locked ? '설정' : '편집'}
-          </Button>
-          <Button
-            tone="brand"
-            variant={survey.closed || locked ? 'solid' : 'outline'}
-            size="sm"
-            onClick={() => navigate({ to: '/$surveyId/results', params: { surveyId: survey.id } })}
-          >
-            결과 보기 <Icon name="chevronRight" size="sm" />
+        </div>
+        {/* 마감된 설문은 고칠 수 없어 편집 버튼을 숨긴다. 다시 열면(스위치) 돌아온다 */}
+        <div className={`grid gap-2 md:flex md:*:w-auto md:*:whitespace-nowrap ${survey.closed ? 'grid-cols-1' : 'grid-cols-2'}`}>
+          {!survey.closed && (
+            <Button
+              tone="neutral"
+              variant="outline"
+              size="md"
+              fullWidth
+              onClick={() => navigate({ to: '/$surveyId/edit', params: { surveyId: survey.id }, search: locked ? { tab: 'settings' } : {} })}
+            >
+              <Icon name="penLine" size="sm" /> {locked ? '설정' : '편집'}
+            </Button>
+          )}
+          <Button tone="brand" size="md" fullWidth onClick={() => navigate({ to: '/$surveyId/results', params: { surveyId: survey.id } })}>
+            결과 보기 · {survey.responseCount}명
           </Button>
         </div>
       </div>
