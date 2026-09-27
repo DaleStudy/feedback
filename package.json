@@ -8,12 +8,12 @@
     "preview": "bun run build && vite preview",
     "test": "tsc --noEmit && bun test",
     "deploy": "bun run build && wrangler deploy",
-    "deploy:preview": "CLOUDFLARE_ENV=preview vite build && wrangler deploy",
+    "deploy:preview": "bun run build && wrangler preview",
     "cf-typegen": "wrangler types",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply feedback --local",
     "db:migrate:remote": "wrangler d1 migrations apply feedback --remote",
-    "db:migrate:preview": "wrangler d1 migrations apply feedback-preview --remote --env preview",
+    "db:migrate:preview": "wrangler d1 migrations apply feedback --remote --preview",
     "db:seed:local": "bun scripts/seed-survey.ts",
     "db:seed:remote": "bun scripts/seed-survey.ts --remote"
   },
@@ -28,7 +28,7 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.54.11",
+    "@cloudflare/vite-plugin": "^1.61.0",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/router-plugin": "^1.168.40",
     "@types/node": "^22.20.3",
@@ -40,6 +40,6 @@
     "typescript": "^7.0.2",
     "vite": "^8.3.0",
     "vite-tsconfig-paths": "^6.1.1",
-    "wrangler": "^4.133.0"
+    "wrangler": "^4.142.0"
   }
 }
