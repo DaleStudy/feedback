@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { Heading, Icon, Tag, Text } from 'daleui'
 import { pageHead } from '@/lib/seo'
+import { AppLink } from '@/components/AppLink'
 import { daysLeft, dday, formatDeadline } from '@/lib/kst'
 import { listMySurveys } from '@/server/functions/surveys'
 
@@ -83,7 +84,12 @@ function HomePage() {
                     </Text>
                   )}
                 </div>
-                <span className="shrink-0 whitespace-nowrap">
+                <span className="flex shrink-0 items-center gap-3 whitespace-nowrap">
+                  {s.answered && !s.closed && (
+                    <AppLink to="/$surveyId" params={{ surveyId: s.id }} tone="brand" size="sm">
+                      고치기
+                    </AppLink>
+                  )}
                   <Tag tone={s.answered ? 'success' : 'neutral'}>{s.answered ? '응답 완료' : '응답 안 함'}</Tag>
                 </span>
               </li>

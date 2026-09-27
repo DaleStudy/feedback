@@ -60,6 +60,7 @@ bun run db:migrate:remote   # 프로덕션 D1 마이그레이션 (아래 Gotchas
 - **D1 파라미터 ~100개 제한**: 답변·문항 일괄 INSERT 는 10행씩 청크. `submitResponse`, `saveQuestions` 참고.
 - **마감된 설문은 고칠 수 없다** (`manage.ts` 의 `loadOpenSurvey`). 편집 화면은 관리 목록으로 돌려보내고, 수정 서버 함수는 거절한다. 관리 목록의 스위치로 다시 열면 풀린다.
 - **응답이 1건이라도 있으면 문항·vars 는 잠긴다** (`manage.ts` 의 `locked`). `answers` 가 question id 를 참조해서다. 문항 저장은 전체 교체(delete + insert)라 잠금 전에만 허용한다.
+- **응답 고치기는 마감 전까지** (`submitResponse`). 응답 행을 새로 만들지 않고 답만 바꿔서 응답 수와 문항 잠금이 그대로다. 취소(삭제)는 두지 않는다 — 편집자가 이미 본 결과는 지워지지 않고, 마지막 응답이 사라지면 문항 잠금이 풀린다.
 - **SQLite 마이그레이션**: 기존 테이블에 NOT NULL 컬럼을 DEFAULT 없이 추가할 수 없다.
 - **TypeScript 7**: `baseUrl` 옵션이 사라졌다. `paths` 만 쓴다.
 - **`.dev.vars` 변경은 dev 서버 재시작 필요.**

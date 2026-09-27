@@ -82,6 +82,13 @@ export const getSurvey = createServerFn({ method: 'GET' })
     const existing = await db.query.responses.findFirst({
       where: and(eq(responses.surveyId, survey.id), eq(responses.userId, user.id)),
     })
+    // 마감 전에는 응답을 고칠 수 있어서, 고치기 화면을 내가 낸 답으로 채운다
+    const myAnswers: Record<number, string> =
+      existing && allowed
+        ? Object.fromEntries(
+            (await db.select().from(answers).where(eq(answers.responseId, existing.id))).map((a) => [a.questionId, a.value]),
+          )
+        : {}
 
     return {
       ...survey,
@@ -91,6 +98,8 @@ export const getSurvey = createServerFn({ method: 'GET' })
       questions: surveyQuestions,
       canReview: await isEditor(db, survey.id, user.login),
       answered: Boolean(existing),
+      submittedAt: existing?.submittedAt ?? null,
+      myAnswers,
     }
   })
 
@@ -115,12 +124,13 @@ export const submitResponse = createServerFn({ method: 'POST' })
       if (problem) throw new Error(`${problem}: ${q.label}`)
     }
 
+    // 이미 답했으면 고치기: 응답 행은 그대로 두고(응답 수·문항 잠금이 변하지 않게) 답만 통째로 바꾼다.
+    // submitted_at 은 마지막으로 낸 시각이 된다.
     const existing = await db.query.responses.findFirst({
       where: and(eq(responses.surveyId, survey.id), eq(responses.userId, user.id)),
     })
-    if (existing) throw new Error('이미 응답한 설문입니다')
-
-    const responseId = crypto.randomUUID()
+    const responseId = existing?.id ?? crypto.randomUUID()
+    const submittedAt = new Date().toISOString()
     const rows = [...given]
       .filter(([questionId, value]) => byId.has(questionId) && value)
       .map(([questionId, value]) => ({ responseId, questionId, value }))
@@ -130,7 +140,10 @@ export const submitResponse = createServerFn({ method: 'POST' })
     for (let i = 0; i < rows.length; i += 10) chunks.push(rows.slice(i, i + 10))
 
     await db.batch([
-      db.insert(responses).values({ id: responseId, surveyId: survey.id, userId: user.id, submittedAt: new Date().toISOString() }),
+      existing
+        ? db.update(responses).set({ submittedAt }).where(eq(responses.id, responseId))
+        : db.insert(responses).values({ id: responseId, surveyId: survey.id, userId: user.id, submittedAt }),
+      db.delete(answers).where(eq(answers.responseId, responseId)),
       ...chunks.map((chunk) => db.insert(answers).values(chunk)),
     ])
   })

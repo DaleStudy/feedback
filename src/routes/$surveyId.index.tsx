@@ -49,7 +49,8 @@ function SurveyFlow({ survey, previewMode }: { survey: SurveyData; previewMode: 
   const total = survey.questions.length
   // 0 = 시작 화면, 1..total = 질문, total + 1 = 제출 완료
   const [step, setStep] = useState(0)
-  const [values, setValues] = useState<Record<number, string>>({})
+  // 이미 답했으면 낸 답을 채워 두고 고치게 한다
+  const [values, setValues] = useState<Record<number, string>>(survey.myAnswers)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -58,7 +59,7 @@ function SurveyFlow({ survey, previewMode }: { survey: SurveyData; previewMode: 
   const current = step >= 1 && step <= total ? survey.questions[step - 1] : null
   const done = step > total
   // 미리보기에서는 이미 답했거나 마감된 설문도 끝까지 넘겨 볼 수 있다
-  const answered = survey.answered && !previewMode
+  const editing = survey.answered && !previewMode
   const closed = survey.closed && !previewMode
 
   useEffect(() => () => clearTimeout(timer.current), [])
@@ -73,13 +74,13 @@ function SurveyFlow({ survey, previewMode }: { survey: SurveyData; previewMode: 
 
   // 시작 화면에서 Enter 로 시작
   useEffect(() => {
-    if (step !== 0 || total === 0 || answered || closed) return
+    if (step !== 0 || total === 0 || closed) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Enter' && !(e.target instanceof HTMLButtonElement)) setStep(1)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [step, total, answered, closed])
+  }, [step, total, closed])
 
   const submit = async (all: Record<number, string>) => {
     if (previewMode) {
@@ -140,8 +141,8 @@ function SurveyFlow({ survey, previewMode }: { survey: SurveyData; previewMode: 
     )
   } else if (done) {
     body = (
-      <Ending icon="check" tone="success" title="고마워요">
-        응답이 저장됐어요. 제출한 답은 고칠 수 없어요.
+      <Ending icon="check" tone="success" title={editing ? '응답을 고쳤어요' : '고마워요'}>
+        응답이 저장됐어요. 마감 전까지는 이 링크에서 다시 고칠 수 있어요.
       </Ending>
     )
   } else if (!survey.allowed) {
@@ -150,10 +151,10 @@ function SurveyFlow({ survey, previewMode }: { survey: SurveyData; previewMode: 
         정해진 사람과 팀만 답할 수 있는 설문이에요. 대상이라면 GitHub 팀에 들어간 뒤 다시 로그인해 보세요.
       </Ending>
     )
-  } else if (answered) {
+  } else if (editing && closed) {
     body = (
       <Ending icon="check" tone="success" title="이미 응답하셨어요" canReview={survey.canReview} surveyId={survey.id}>
-        같은 설문에는 한 번만 답할 수 있어요.
+        마감된 설문이라 더는 고칠 수 없어요.
       </Ending>
     )
   } else if (closed) {
@@ -179,12 +180,20 @@ function SurveyFlow({ survey, previewMode }: { survey: SurveyData; previewMode: 
             약 {survey.minutes}분 · {total}문항{survey.closesAt ? ` · ${formatDeadline(survey.closesAt)} 마감` : ''}
           </Text>
         </div>
+        {editing && survey.submittedAt && (
+          <div className="flex items-center gap-2">
+            <Icon name="check" size="sm" tone="success" />
+            <Text size="sm" tone="neutral">
+              {formatDeadline(survey.submittedAt)}에 응답했어요. 마감 전까지 답을 고칠 수 있어요.
+            </Text>
+          </div>
+        )}
         {total === 0 ? (
           <Text tone="neutral">아직 문항이 없어요.</Text>
         ) : (
           <div className="flex items-center gap-4">
             <Button tone="brand" size="lg" onClick={() => setStep(1)}>
-              시작하기 <Icon name="chevronRight" size="sm" />
+              {editing ? '응답 고치기' : '시작하기'} <Icon name="chevronRight" size="sm" />
             </Button>
             <span className="hidden md:inline">
               <Text size="sm" tone="neutral" muted>
@@ -237,7 +246,7 @@ function SurveyFlow({ survey, previewMode }: { survey: SurveyData; previewMode: 
           )}
           <div className="flex flex-wrap items-center gap-4">
             <Button tone="brand" size="lg" loading={submitting} onClick={() => goNext()}>
-              {step === total ? '제출하기' : '확인'} <Icon name="check" size="sm" />
+              {step === total ? (editing ? '고친 답 제출하기' : '제출하기') : '확인'} <Icon name="check" size="sm" />
             </Button>
             <span className="hidden md:inline">
               <Text size="sm" tone="neutral" muted>

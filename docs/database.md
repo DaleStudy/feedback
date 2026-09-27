@@ -134,7 +134,7 @@ erDiagram
 | `id` | UUID |
 | `survey_id` | FK → surveys. cascade |
 | `user_id` | FK → users. 답한 사람. 결과 화면에는 보여 주지 않는다 (`identified` 문항만 예외) |
-| `submitted_at` | ISO 8601 UTC |
+| `submitted_at` | ISO 8601 UTC. 마지막으로 낸 시각 — 마감 전에는 응답을 고칠 수 있고, 고치면 이 행은 두고 `answers` 만 통째로 바꾼다 |
 
 ### answers
 
