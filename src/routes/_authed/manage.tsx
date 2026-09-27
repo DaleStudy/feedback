@@ -93,7 +93,7 @@ function ManagePage() {
 
           <div className="flex flex-col gap-3">
             {shown.map((s) => (
-              <SurveyCard key={s.id} survey={s} />
+              <SurveyCard key={s.id} survey={s} canCreate={canCreate} />
             ))}
             {shown.length === 0 && (
               <Text tone="neutral" muted>
@@ -107,7 +107,7 @@ function ManagePage() {
   )
 }
 
-function SurveyCard({ survey }: { survey: ManagedSurvey }) {
+function SurveyCard({ survey, canCreate }: { survey: ManagedSurvey; canCreate: boolean }) {
   const navigate = useNavigate()
   const [copy, setCopy] = useState<'idle' | 'copied' | 'failed'>('idle')
   // 응답이 있으면 문항이 잠겨 설정만 고칠 수 있다. 버튼 이름이 그걸 말하고, 설정 탭으로 바로 연다. 마감되면 막힌다.
@@ -167,6 +167,11 @@ function SurveyCard({ survey }: { survey: ManagedSurvey }) {
             {copy === 'copied' ? <Icon name="check" size="sm" /> : <LinkIcon size={16} aria-hidden />}
             {copy === 'copied' ? '복사했어요' : copy === 'failed' ? '복사하지 못했어요' : '링크 복사'}
           </Button>
+          {canCreate && (
+            <Button tone="neutral" variant="ghost" size="sm" onClick={() => navigate({ to: '/new', search: { from: survey.id } })}>
+              복제
+            </Button>
+          )}
           <Button tone="neutral" variant="ghost" size="sm" onClick={() => navigate({ to: '/$surveyId', params: { surveyId: survey.id }, search: { preview: true } })}>
             <Icon name="eye" size="sm" /> 미리보기
           </Button>

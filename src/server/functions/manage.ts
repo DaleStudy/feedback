@@ -7,7 +7,7 @@ import { questions, responses, surveyEditors, surveyInvitees, surveys } from '@/
 import { isClosed } from '@/lib/kst'
 import { type Manager, editedSurveyIds, isEditor } from '../access'
 import { authMiddleware } from '../auth/middleware'
-import { type QuestionInput, type SurveyFields, isValidLogin, newSurveyId, normalizeSurveyFields, parseInvitee, resolveQuestions } from '../survey-input'
+import { type QuestionInput, type SurveyFields, copyQuestions, isValidLogin, newSurveyId, normalizeSurveyFields, parseInvitee, resolveQuestions } from '../survey-input'
 
 // 설문을 고치고 결과를 보는 서버 함수. 운영진(maintainer 팀, users.canCreateSurveys)은 모든 설문을, 편집자는 더해진 설문을 다룬다. 새 설문은 운영진만 만든다.
 // 응답이 1건이라도 있으면 문항·vars 는 잠긴다 (answers 가 question id 를 참조하기 때문).
@@ -76,18 +76,40 @@ export const getSurveyForEdit = createServerFn({ method: 'GET' })
     return { ...survey, questions: surveyQuestions, editors: editors.map((e) => e.login), invitees, responseCount, locked }
   })
 
-// 제목과 설명만 받는다. 나머지(마감·공개 범위·문항)는 편집 화면에서 정한다.
+// 제목과 설명만 받는다. 마감은 편집 화면에서 정한다.
+// from 을 주면 그 설문을 템플릿 삼아 공개 범위·vars·문항·대상을 옮긴다. 응답·편집자·마감은 옮기지 않는다.
 export const createSurvey = createServerFn({ method: 'POST' })
   .middleware([authMiddleware])
-  .validator((input: { title: string; description: string | null }) => input)
+  .validator((input: { title: string; description: string | null; from?: string }) => input)
   .handler(async ({ data, context: { user } }) => {
     if (!user.canCreateSurveys) throw new Error('새 설문은 DaleStudy 운영진(maintainer 팀)만 만들 수 있어요')
     const db = getDb(env.DB)
-    const fields = normalizeSurveyFields({ ...data, visibility: 'home', closesAt: null, vars: null })
+    const source = data.from ? (await loadEditableSurvey(db, data.from, user)).survey : null
+    const fields = normalizeSurveyFields({
+      title: data.title,
+      description: data.description,
+      visibility: source?.visibility ?? 'home',
+      closesAt: null,
+      vars: source?.vars ?? null,
+    })
     const id = newSurveyId()
+    const sourceQuestions = source
+      ? await db.query.questions.findMany({ where: eq(questions.surveyId, source.id), orderBy: asc(questions.position) })
+      : []
+    const rows = copyQuestions(
+      sourceQuestions.map(({ key, type, label, required, identified, config }) => ({ key, type, label, required, identified, config })),
+      fields.vars,
+    ).map((q) => ({ ...q, surveyId: id }))
+    const invitees = source ? await db.select().from(surveyInvitees).where(eq(surveyInvitees.surveyId, source.id)) : []
+
+    // D1 파라미터 제한: 문항 한 행에 8개라 10행씩
+    const chunks = []
+    for (let i = 0; i < rows.length; i += 10) chunks.push(rows.slice(i, i + 10))
     await db.batch([
       db.insert(surveys).values({ id, ...fields, createdAt: new Date().toISOString() }),
       db.insert(surveyEditors).values({ surveyId: id, login: user.login }),
+      ...chunks.map((chunk) => db.insert(questions).values(chunk)),
+      ...invitees.map((i) => db.insert(surveyInvitees).values({ surveyId: id, kind: i.kind, name: i.name })),
     ])
     return { id }
   })

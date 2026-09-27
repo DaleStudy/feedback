@@ -113,3 +113,14 @@ export function resolveQuestions(items: QuestionInput[], vars: CommonVars | null
     return { position, key: null, type: item.type, label, required: item.required ?? true, identified: false, config }
   })
 }
+
+// 기존 설문을 템플릿 삼아 새 설문의 문항을 만든다. 공통 문항은 지금의 정의로 다시 쓴다(문구가 고쳐졌으면 새 문구로).
+// 정의가 사라진 공통 문항이나 vars 가 없는 설문의 문항은 저장된 그대로 옮긴다 — 템플릿이 조용히 문항을 잃지 않게.
+export function copyQuestions(source: Omit<QuestionRow, 'position'>[], vars: CommonVars | null): QuestionRow[] {
+  return source.map((q, i) => {
+    const base = q.key ? commonQuestions.find((c) => c.key === q.key) : undefined
+    const row = { ...q, position: i + 1 }
+    if (!base || !vars) return row
+    return { ...row, type: base.type, label: renderLabel(base.label, vars), identified: base.identified ?? false, config: base.config ?? null }
+  })
+}

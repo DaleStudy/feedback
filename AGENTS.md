@@ -52,6 +52,7 @@ bun run db:migrate:remote   # 프로덕션 D1 마이그레이션 (아래 Gotchas
 - 화면 용어: 만들고·지우고·마감되는 양식은 **설문**, 참가자가 남기는 내용은 **피드백** ("피드백을 남기다", 사이트 이름). 코드·DB·URL 은 `survey`.
 - 공통 문항은 `src/questions/common.ts`. `questions.key` 로 설문을 가로질러 같은 문항을 찾는다. 문구 변경은 곧 비교 단절이다.
 - 설문은 기수·프로그램 없이 홀로 선다 — 설문끼리 비교에 필요한 건 공통 문항 `key` 뿐이고, 기수 표는 기수마다 seed 로 등록해야 하는 비용만 컸다. 새 설문은 DaleStudy `maintainer` 팀만 만든다 (로그인 때 확인해 `users.can_create_surveys`, `src/server/auth/github.ts` 의 `SURVEY_CREATORS`). 고치고 결과를 보는 사람은 운영진 전원과 `survey_editors` (`src/server/access.ts` 의 `isEditor`) — 운영은 팀으로 하므로 만든 사람만 고칠 수 있으면 막힌다. `survey_editors` 는 운영진이 아닌 사람(프로그램 리더 등)에게 맡길 때 쓴다. 서버 함수는 `src/server/functions/manage.ts`, 입력 검증은 `src/server/survey-input.ts` 의 순수 함수에 모여 있고 seed 도 같은 함수를 쓴다.
+- 템플릿은 따로 두지 않고 기존 설문을 고른다 (`createSurvey` 의 `from`, 관리 목록의 "복제"). 문항·공개 범위·vars·대상을 옮기고 응답·편집자·마감은 옮기지 않는다. 공통 문항은 `copyQuestions` 가 지금의 정의로 다시 써서 옛 문구가 퍼지지 않는다. 템플릿 표를 따로 두면 설문과 같은 편집기·검증을 한 벌 더 유지해야 하는데, 실제로 필요한 건 "지난번 그 설문처럼"이었다.
 - 공개 범위는 `surveys.visibility`. `home`·`link` 는 응답 자격이 따로 없다(링크 + GitHub 로그인 + 중복 방지). `invited` 는 `survey_invitees` 의 사람(login)·팀(slug)과 편집자만 홈에서 보고 답한다 (`src/server/access.ts` 의 `canRespond`, `invitedSurveyIds`). 팀은 로그인 때 받은 `users.teams` 로 맞춰 보므로 팀이 바뀌면 다시 로그인해야 한다. `invited` 는 운영진처럼 대상이 적고 GitHub 이름을 아는 설문에 쓴다. 참여 회고 같은 큰 설문에 참가자 명단은 두지 않는다 — 링크는 프로그램 채널에만 공유되고, Discord↔GitHub 매핑을 유지하는 비용이 명단이 주는 안전보다 크다(블로그 1기 24명 중 7명 매핑 실패).
 - 설계를 바꾸면 이유를 PR 설명에 남기고, 지켜야 할 규칙이 생기면 이 문서의 해당 줄에 한 줄로 이유를 붙인다.
 

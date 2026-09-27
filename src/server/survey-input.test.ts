@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { CommonVars } from '@/questions/common'
-import { isValidLogin, newSurveyId, normalizeSurveyFields, parseInvitee, resolveQuestions } from './survey-input'
+import { copyQuestions, isValidLogin, newSurveyId, normalizeSurveyFields, parseInvitee, resolveQuestions } from './survey-input'
 
 const vars: CommonVars = {
   program: '스터디',
@@ -121,5 +121,25 @@ describe('resolveQuestions', () => {
       '2번 문항: 보기를 두 개 이상',
     )
     expect(() => resolveQuestions([], null)).toThrow('하나 이상')
+  })
+})
+
+describe('copyQuestions', () => {
+  const custom = { key: null, type: 'long' as const, label: '한 가지만 적어 주세요', required: false, identified: false, config: null }
+
+  test('이 설문만의 문항은 그대로 옮기고 순서를 다시 매긴다', () => {
+    expect(copyQuestions([custom], vars)).toEqual([{ ...custom, position: 1 }])
+  })
+
+  test('공통 문항은 지금의 정의로 문구를 다시 쓴다', () => {
+    const [row] = copyQuestions([{ ...custom, key: 'survey_feedback', label: '옛 문구' }], vars)
+    expect(row.key).toBe('survey_feedback')
+    expect(row.label).not.toBe('옛 문구')
+  })
+
+  test('정의가 사라진 공통 문항이나 vars 가 없으면 저장된 문구를 지킨다', () => {
+    const gone = { ...custom, key: 'dropout', label: '옛 문구' }
+    expect(copyQuestions([gone], vars)[0].label).toBe('옛 문구')
+    expect(copyQuestions([{ ...custom, key: 'survey_feedback', label: '옛 문구' }], null)[0].label).toBe('옛 문구')
   })
 })
