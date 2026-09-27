@@ -6,6 +6,8 @@
 
 개발에 필요한 내용은 [AGENTS.md](AGENTS.md)와 [docs](docs) 에 있습니다.
 
+PR 을 올리면 `https://<브랜치>.feedback-preview.dalestudy.com` 에 미리보기가 생겨서, 머지 전에 GitHub 로그인까지 해 보며 확인할 수 있습니다. 미리보기는 프로덕션과 다른 데이터베이스를 씁니다.
+
 ## 기여 (Contribution)
 
 본 프로젝트는 [All Contributors](https://github.com/all-contributors/all-contributors) 관례에 따라 기여자분들의 공헌을 인정하고 감사를 표현하고 있습니다.

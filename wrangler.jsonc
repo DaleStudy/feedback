@@ -17,8 +17,6 @@
       "binding": "DB",
       "database_name": "feedback",
       "database_id": "6bbc1200-439a-42a5-8447-4e529f8a3537",
-      // 미리보기 D1. `d1 migrations apply feedback --preview` 가 여기로 적용한다
-      "preview_database_id": "0d7d18e8-1e8f-443a-96d3-c1c2afa4d4c7",
       "migrations_dir": "drizzle"
     }
   ],
@@ -33,5 +31,19 @@
         "migrations_dir": "drizzle"
       }
     ]
+  },
+  // 미리보기 D1 마이그레이션 전용(`db:migrate:preview`). `d1 migrations apply` 는 `previews` 블록의 D1 을 못 찾는다.
+  // `preview_database_id` 로 하면 로컬 개발도 그 id 의 빈 DB 를 쓰게 돼서 이렇게 둔다. 배포에는 쓰지 않는다.
+  "env": {
+    "migrate-preview": {
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "feedback-preview",
+          "database_id": "0d7d18e8-1e8f-443a-96d3-c1c2afa4d4c7",
+          "migrations_dir": "drizzle"
+        }
+      ]
+    }
   }
 }

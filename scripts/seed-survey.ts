@@ -1,6 +1,5 @@
 // 설문 하나와 편집자를 JSON 으로 정의해 D1 에 넣는다. 설문은 보통 사이트의 관리 화면에서 만들므로 로컬 개발 데이터용이다.
-//   bun scripts/seed-survey.ts seed/blog01-final.json            # 로컬
-//   bun scripts/seed-survey.ts seed/blog01-final.json --remote   # 프로덕션
+//   bun scripts/seed-survey.ts seed/example.json   # 로컬 D1 에만. 프로덕션 설문은 화면(새 설문·복제)으로 만든다
 // 같은 id 의 설문이 이미 있으면 실패한다. id 를 생략하면 새로 만든다.
 // questions 항목은 둘 중 하나다:
 //   { "common": "goal_achieved", "required"?: bool }                     ← src/questions/common.ts 의 공통 문항. 문구는 vars 로 채운다
@@ -35,11 +34,9 @@ interface SeedFile {
   }
 }
 
-const args = process.argv.slice(2)
-const flags = args.filter((a) => a.startsWith('--'))
-const file = args.find((a) => !a.startsWith('--'))
+const file = process.argv[2]
 if (!file) {
-  console.error('usage: bun scripts/seed-survey.ts <seed.json> [--remote]')
+  console.error('usage: bun scripts/seed-survey.ts <seed.json>')
   process.exit(1)
 }
 
@@ -71,6 +68,5 @@ const out = '.wrangler/seed.sql'
 writeFileSync(out, sql.join('\n'))
 console.log(`설문 ${id}`)
 
-const target = flags.includes('--remote') ? '--remote' : '--local'
-const result = spawnSync('bunx', ['wrangler', 'd1', 'execute', 'feedback', target, '--file', out], { stdio: 'inherit' })
+const result = spawnSync('bunx', ['wrangler', 'd1', 'execute', 'feedback', '--local', '--file', out], { stdio: 'inherit' })
 process.exit(result.status ?? 1)
