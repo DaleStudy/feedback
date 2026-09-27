@@ -37,7 +37,7 @@ bun run deploy:preview      # 지금 브랜치의 미리보기 수동 배포 (�
 - **미리보기**: `main` 이 아닌 브랜치를 push 하면 Workers Builds 가 `bun run db:migrate:preview && bun run deploy:preview`(= `wrangler preview`, Workers Previews)로 브랜치마다 `https://<브랜치>.feedback-preview.dalestudy.com` 을 만든다. PR 은 머지 전에 여기서 눌러 본다.
   - 설정은 `wrangler.jsonc` 의 `previews` 블록(D1 을 다시 선언해야 한다 — 상속되지 않는다)과 `previews_enabled` 커스텀 도메인 route. 미리보기 D1 은 `feedback-preview` 하나를 모든 브랜치가 함께 쓴다. 프로덕션 응답을 건드리지 않는 게 목적이다.
   - 마이그레이션은 `d1_databases[].preview_database_id` + `--preview` 로 미리보기 D1 에 적용한다(`db:migrate:preview`). `previews` 블록의 D1 은 `d1 migrations apply` 가 찾지 못한다.
-  - 시크릿은 `wrangler preview base-config secret put <KEY>`.
+  - 시크릿은 `wrangler preview base-config secret put <KEY>`. base config 는 새로 만들어지는 미리보기에만 들어간다 — 그 전에 있던 미리보기에서 GitHub 로 `client_id=undefined` 가 가면 `wrangler preview secret put <KEY> --name <브랜치>` 로 넣는다.
   - GitHub App 콜백은 `https://feedback-preview.dalestudy.com/auth/callback` 을 와일드카드(하위 도메인 허용)로 등록해 브랜치 주소마다 로그인된다.
   - `versions upload` 의 버전 URL 은 쓰지 않는다 — 프로덕션 D1 을 쓴다(Cloudflare 문서도 PR 테스트에 쓰지 말라고 한다). 그래서 `preview_urls` 도 켜지 않는다.
   - Workers Builds 는 브랜치마다 트리거를 만들며 그때의 미리보기 명령을 복사해 둔다. 대시보드의 미리보기 명령을 바꾸면 이미 있던 브랜치에는 적용되지 않는다.
