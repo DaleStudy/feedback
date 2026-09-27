@@ -8,10 +8,12 @@
     "preview": "bun run build && vite preview",
     "test": "tsc --noEmit && bun test",
     "deploy": "bun run build && wrangler deploy",
+    "deploy:preview": "CLOUDFLARE_ENV=preview vite build && wrangler deploy",
     "cf-typegen": "wrangler types",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply feedback --local",
     "db:migrate:remote": "wrangler d1 migrations apply feedback --remote",
+    "db:migrate:preview": "wrangler d1 migrations apply feedback-preview --remote --env preview",
     "db:seed:local": "bun scripts/seed-survey.ts",
     "db:seed:remote": "bun scripts/seed-survey.ts --remote"
   },

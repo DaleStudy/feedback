@@ -15,5 +15,22 @@
       "database_id": "6bbc1200-439a-42a5-8447-4e529f8a3537",
       "migrations_dir": "drizzle"
     }
-  ]
+  ],
+  // PR 브랜치 미리보기. `CLOUDFLARE_ENV=preview` 로 빌드하면 워커 이름이 feedback-preview 가 된다.
+  // D1 은 따로 둔다 — 프로덕션 응답을 건드리지 않게. Vite 플러그인은 routes 를 그대로 물려주므로
+  // 빈 배열로 덮어써야 프로덕션 커스텀 도메인을 가져가지 않고 workers.dev 로만 뜬다.
+  "env": {
+    "preview": {
+      "routes": [],
+      "workers_dev": true,
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "feedback-preview",
+          "database_id": "0d7d18e8-1e8f-443a-96d3-c1c2afa4d4c7",
+          "migrations_dir": "drizzle"
+        }
+      ]
+    }
+  }
 }

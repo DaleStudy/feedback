@@ -19,6 +19,8 @@ bun run db:migrate:local    # 로컬 D1 마이그레이션
 bun run db:seed:local <json># 설문 JSON(편집자·문항)을 로컬 D1 에 넣기 (seed/example.json 참고)
 bunx drizzle-kit generate --name <desc>   # 스키마 변경 후 마이그레이션 생성
 bun run db:migrate:remote   # 프로덕션 D1 마이그레이션 (아래 Gotchas 의 순서를 지킨다)
+bun run db:migrate:preview  # 미리보기 D1 마이그레이션
+bun run deploy:preview      # 미리보기 워커 수동 배포 (보통은 PR push 때 Workers Builds 가 한다)
 ```
 
 ## Local setup
@@ -31,8 +33,12 @@ bun run db:migrate:remote   # 프로덕션 D1 마이그레이션 (아래 Gotchas
 ## Deployment
 
 - `main` 에 push 하면 Cloudflare Workers Builds 가 `bun run build` → `npx wrangler deploy`. 빌드 결과는 커밋의 check run `Workers Builds: feedback` 으로 확인한다. `bun run deploy` 는 수동 fallback.
-- 이미 설정된 것: D1 `feedback`(APAC, id 는 `wrangler.jsonc`), 시크릿 `GITHUB_CLIENT_ID`·`GITHUB_CLIENT_SECRET`, 커스텀 도메인(`wrangler.jsonc` 의 `routes`), 빌드 변수 `BUN_VERSION=1.4.0`(빌드 이미지 기본 bun 은 lockfile v2 를 못 읽는다. 로컬 bun 을 올리면 같이 올린다).
-- GitHub App 의 Callback URL 은 localhost 와 `https://feedback.dalestudy.com/auth/callback` 둘 다. 앱은 **공개(public)** 여야 한다 — 비공개 앱은 소유 조직 멤버만 authorize 할 수 있어서 조직 밖 참가자가 GitHub 의 authorize 페이지에서 404 를 본다(우리 로그에는 안 남는다).
+- **미리보기**: `main` 이 아닌 브랜치를 push 하면 Workers Builds 가 `bun run db:migrate:preview && bun run deploy:preview` 로 https://feedback-preview.dalestudy.workers.dev 에 배포한다. PR 은 머지 전에 여기서 눌러 본다. 워커(`feedback-preview`)와 D1(`feedback-preview`)이 프로덕션과 따로라 실제 응답을 건드리지 않는다. 미리보기는 하나라서 마지막에 push 한 브랜치가 차지한다.
+  - 환경은 `wrangler.jsonc` 의 `env.preview` 이고, Vite 플러그인은 `CLOUDFLARE_ENV=preview` 로 빌드할 때 고른다(`wrangler deploy --env` 가 아니다). 플러그인이 `routes` 를 물려주므로 `env.preview.routes` 를 빈 배열로 둬야 프로덕션 커스텀 도메인을 가져가지 않는다.
+  - 비공개 베타인 `wrangler preview`(PR마다 다른 주소)는 쓰지 않는다 — 주소가 매번 달라 GitHub 로그인 콜백을 등록할 수 없다.
+  - 시크릿은 워커마다 따로다: `wrangler secret put <KEY> --name feedback-preview`.
+- 이미 설정된 것: D1 `feedback`·`feedback-preview`(APAC, id 는 `wrangler.jsonc`), 시크릿 `GITHUB_CLIENT_ID`·`GITHUB_CLIENT_SECRET`, 커스텀 도메인(`wrangler.jsonc` 의 `routes`), 빌드 변수 `BUN_VERSION=1.4.0`(빌드 이미지 기본 bun 은 lockfile v2 를 못 읽는다. 로컬 bun 을 올리면 같이 올린다).
+- GitHub App 의 Callback URL 은 localhost, `https://feedback.dalestudy.com/auth/callback`, `https://feedback-preview.dalestudy.workers.dev/auth/callback` 셋. 앱은 **공개(public)** 여야 한다 — 비공개 앱은 소유 조직 멤버만 authorize 할 수 있어서 조직 밖 참가자가 GitHub 의 authorize 페이지에서 404 를 본다(우리 로그에는 안 남는다).
 - 저장소를 새로 만들면 Workers Builds 연결이 끊긴다(대시보드에는 이름이 그대로 보여도). 대시보드에서 Disconnect → Connect 로 다시 잇는다.
 
 ## Architecture
