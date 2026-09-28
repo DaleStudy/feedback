@@ -55,50 +55,48 @@
 
 ## 공통 문항
 
-모든 프로그램(스터디·프로젝트)이 같은 `key` 로 묻는 문항. `src/questions/common.ts` 에 있고, 편집 화면의 "공통 문항 추가" 나 seed 의 `{ "common": "<key>" }` 로 넣는다. 설문끼리 비교는 `questions.key` 로 한다.
+모든 프로그램(스터디·프로젝트)이 같은 `key` 로 묻는 문항. 문구·유형·보기의 원본은 `src/questions/common.ts` 이고, 아래 표는 각 문항을 왜 두는지만 적는다. 편집 화면의 "공통 문항 추가" 나 seed 의 `{ "common": "<key>" }` 로 넣는다. 설문끼리 비교는 `questions.key` 로 한다.
 
 문항마다 `audience` 가 어느 회고의 기본 문항인지 적는다: `participants`(참여 회고) · `organizers`(운영 회고) · 없음(양쪽). 편집 화면의 "참여 회고 기본 문항 넣기" / "운영 회고 기본 문항 넣기" 가 이걸로 묶는다. 응답 자격과는 상관없다 — 누가 답하는지는 링크를 누구에게 주느냐가 정한다.
 
-| key | type | 문항 | 비고 |
-|---|---|---|---|
-| `goal_achieved` | scale | 시작할 때 이 `{program}`에서 하고 싶었던 것을 얼마나 해냈나요? | |
-| `effort_satisfied` | scale | `{activity}` 들인 노력에 스스로 만족하나요? | |
-| `gave_back` | scale | 다른 참가자의 `{artifact}`을 읽고 댓글이나 반응을 남기는 데 얼마나 참여했나요? | 라벨 "거의 안 했다 · 적극적으로 했다" |
-| `highlight` | long | `{period}` 내가 잘한 것 하나를 적어주세요. | |
-| `lowlight` | long | `{period}` 나 스스로 아쉬웠던 것 하나를 적어주세요. | |
-| `do_differently` | long | `{redo}` 무엇을 다르게 하시겠어요? | |
-| `community_help` | long | 그렇게 하는 데 운영진이나 다른 참가자가 어떤 도움을 주면 좋을까요? | `do_differently` 바로 뒤에 둔다 |
-| `recommend` | scale | 이 `{program}`를 주변 개발자에게 추천하시겠어요? | 라벨 "전혀 아니다 · 꼭 추천하겠다". 설문끼리 비교하는 대표 지표 |
-| `rejoin` | choice | `{next}` 참여할 생각이 있나요? | 있다 / 없다. 조건은 `lowlight`·`do_differently`·`community_help` 가 받는다 |
-| `join_organizers` | short | 다르게 해보고 싶은 것이 있었다면, 운영진이 되어 직접 바꿔 보는 건 어때요? 관심 있다면 연락받을 Discord 사용자명을 남겨 주세요. | 비필수. 답(Discord 사용자명)이 있으면 관심 있음. `do_differently` 의 답을 직접 실행할 수 있는 자리라는 걸 은근히 보여 준다. **실명 문항**(`identified`) — 결과 화면에 응답자 아이디가 붙는다. 차기 운영진 모집용 |
+| key | type | 비고 |
+|---|---|---|
+| `goal_achieved` | scale | |
+| `effort_satisfied` | scale | |
+| `gave_back` | scale | 동의 축이 아니라 라벨을 바꿔 둔다 |
+| `highlight` | long | |
+| `lowlight` | long | |
+| `do_differently` | long | |
+| `community_help` | long | `do_differently` 바로 뒤에 둔다 |
+| `recommend` | scale | 설문끼리 비교하는 대표 지표 |
+| `rejoin` | choice | 조건(무엇이 바뀌면 다시 올지)은 `lowlight`·`do_differently`·`community_help` 가 받으므로 보기로 다시 묻지 않는다 |
+| `join_organizers` | short | 답(Discord 사용자명)이 있으면 관심 있음. `do_differently` 의 답을 직접 실행할 수 있는 자리라는 걸 은근히 보여 준다. **실명 문항**(`identified`) — 결과 화면에 응답자 아이디가 붙는다. 차기 운영진 모집용 |
 
 설계 의도: 커뮤니티가 무엇을 해줬는지가 아니라 참가자가 자기 활동을 먼저 돌아보고(`goal_achieved` ~ `lowlight`), 다시 한다면 어떻게 할지 생각한 뒤(`do_differently`), 그것을 위해 커뮤니티가 도울 것을 묻는(`community_help`) 순서다. 요청이 남 탓이 아니라 본인 계획에 붙는 부탁이 되게 하려는 것이다.
 
 ### 운영진 문항
 
-운영 회고는 별도 설문으로 만든다. 공개 범위는 **지정한 사람만**으로 두고 그 기수 운영진(또는 운영진 팀)을 대상으로 넣는다 — 운영진 피드백은 집계가 아니라 다음 기수 계획을 같이 짜는 대화의 시작이다. 결과는 편집자(보통 그 운영진)끼리 본다.
+운영 회고는 별도 설문으로 만든다. 공개 범위는 **지정한 사람만**으로 두고 그 기수 운영진(또는 운영진 팀)을 대상으로 넣는다 — 운영진 피드백은 집계가 아니라 다음 기수 계획을 같이 짜는 대화의 시작이다.
 
-| key | type | 문항 | 비고 |
-|---|---|---|---|
-| `organizer_goal_achieved` | scale | 시작할 때 운영자로서 하고 싶었던 것을 얼마나 해냈나요? | |
-| `organizer_sustainable` | scale | 운영에 들인 시간과 에너지는 다음에도 이어갈 수 있는 수준이었나요? | 운영진 소진 신호. 100% 자발적 운영에서 가장 큰 위험 |
-| `organizer_presence` | scale | 참가자의 질문과 `{artifact}`에 반응하는 데 얼마나 시간을 쓸 수 있었나요? | 라벨 "거의 못 썼다 · 충분히 썼다" |
-| `organizer_highlight` | long | `{period}` 운영자로서 잘한 것 하나를 적어주세요. | |
-| `organizer_lowlight` | long | `{period}` 운영자로서 아쉬웠던 것 하나를 적어주세요. | |
-| `organizer_do_differently` | long | `{redo}` 운영 방식에서 무엇을 다르게 하시겠어요? | |
-| `organizer_help` | long | 그렇게 하는 데 커뮤니티 차원에서 다른 운영진이 어떤 도움을 주면 좋을까요? | `organizer_do_differently` 바로 뒤에 둔다 |
-| `organizer_automate` | long | 반복 작업 중 자동화하거나 아예 없애고 싶은 것이 있다면 적어주세요. | 비필수 |
-| `organizer_continue` | choice | `{next}` 운영을 맡을 생각이 있나요? | 있다 / 없다. 조건은 `organizer_help`·`organizer_automate` 가 받으므로 보기로 다시 묻지 않는다 |
+| key | type | 비고 |
+|---|---|---|
+| `organizer_goal_achieved` | scale | |
+| `organizer_sustainable` | scale | 운영진 소진 신호. 100% 자발적 운영에서 가장 큰 위험 |
+| `organizer_presence` | scale | 동의 축이 아니라 라벨을 바꿔 둔다 |
+| `organizer_highlight` | long | |
+| `organizer_lowlight` | long | |
+| `organizer_do_differently` | long | |
+| `organizer_help` | long | `organizer_do_differently` 바로 뒤에 둔다 |
+| `organizer_automate` | long | |
+| `organizer_continue` | choice | 조건은 `organizer_help`·`organizer_automate` 가 받으므로 보기로 다시 묻지 않는다 |
 
 ### 양쪽 문항
 
 참여·운영 회고 모두 맨 끝에 둔다 (`audience` 가 없는 공통 문항).
 
-| key | type | 문항 | 비고 |
-|---|---|---|---|
-| `survey_feedback` | long | 헷갈렸던 문항이나 다음 설문에서 더 물어봤으면 하는 게 있었다면 알려주세요. | 비필수. 문항 자체가 잘 작동했는지 기수마다 확인한다 |
-
-홈에는 공개 범위가 "홈에 보임" 인 설문, 내가 대상인 "지정한 사람만" 설문, 내가 이미 답한 설문이 보인다. "링크로만" 인 설문은 링크로만 들어온다.
+| key | type | 비고 |
+|---|---|---|
+| `survey_feedback` | long | 문항 자체가 잘 작동했는지 기수마다 확인한다 |
 
 ### vars
 
@@ -123,22 +121,7 @@
 
 ## 저장 구조
 
-```
-questions  (id, survey_id, position, key, type, label, required, identified, config)
-answers    (response_id, question_id, value)
-```
-
-문항은 설문마다 행으로 들어가고(공통 문항도 설문마다 복사된다 — `key` 만 같다), 답은 문항당 한 행이다. 설문마다 넓은 테이블을 만들지 않는 이유는 스키마 마이그레이션 없이 설문을 추가하고, `key` 로 설문을 가로질러 집계하기 위해서다.
-
-```sql
--- 설문별 목표 달성도 평균 (설문 제목으로 기수·프로그램을 구분한다)
-SELECT sv.title, AVG(CAST(a.value AS REAL)) AS avg
-FROM answers a
-JOIN questions q ON q.id = a.question_id
-JOIN surveys sv ON sv.id = q.survey_id
-WHERE q.key = 'goal_achieved'
-GROUP BY sv.id ORDER BY sv.created_at;
-```
+문항은 설문마다 행으로 복사되고(공통 문항도 `key` 만 같다), 답은 문항당 한 행이다. 테이블과 조회 예시는 [database.md](database.md).
 
 ## 유형 추가하기
 

@@ -4,7 +4,7 @@
 
 ## Docs
 
-- `docs/database.md` — 테이블, 관계, 제약, 마이그레이션 이력
+- `docs/database.md` — 테이블, 관계, 제약, 자주 쓰는 조회
 - `docs/questions.md` — 문항 유형, `config`, 공통 문항과 `vars`, 유형 추가 절차
 
 ## Commands
@@ -25,13 +25,13 @@ bun run deploy:preview      # 지금 브랜치의 미리보기 수동 배포 (�
 
 ## Local setup
 
-- 로컬 시크릿은 `.dev.vars` (git 에 올라가지 않음): `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` — DaleStudy GitHub App 의 Client ID·secret. 없으면 로그인 대신 `users`·`sessions` 에 행을 넣고 `Cookie: __Host-session=<id>` 로 확인한다(아래 Gotchas). 실제 GitHub 로그인은 PR 미리보기에서 된다.
+- 로컬 시크릿은 `.dev.vars` (git 에 올라가지 않음): `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` — DaleStudy GitHub App 의 Client ID·secret. 없으면 로그인 대신 `users`·`sessions` 에 행을 직접 넣고 `Cookie: __Host-session=<id>` 로 요청한다. 실제 GitHub 로그인은 PR 미리보기에서 된다.
 - `__Host-` 접두사 쿠키는 Secure 가 필수라, localhost 를 secure context 로 취급하는 Chrome/Firefox 에서 개발한다.
 - seed JSON(`seed/*.json`, 형식은 `seed/example.json`)은 로컬 D1 용이다. 프로덕션 설문은 화면에서 만들거나 복제한다. `editors` 가 편집자, `survey.id` 를 빼면 nanoid 로 만든다. 같은 id 가 있으면 실패한다. 문항은 `{ "common": "<key>", "required"? }`(공통 문항, 문구는 `vars` 로 채움) 또는 `{ "type", "label", "required"?, "config"? }`(이 설문만의 문항). 유형별 저장값·검증·`config` 는 `docs/questions.md`.
 
 ## Deployment
 
-- 변경은 브랜치 → PR → 미리보기에서 확인 → squash merge. `main` 에 직접 push·force push 하지 않는다 — 다른 사람과 함께 쓰는 저장소가 됐고, 머지 기록이 곧 배포 기록이다. 머지하면 브랜치는 GitHub 이 지우고(`delete_branch_on_merge`), 미리보기는 `wrangler preview delete --name <브랜치> -y` 로 지운다.
+- 변경은 브랜치 → PR → 미리보기에서 확인 → squash merge. `main` 에 직접 push·force push 하지 않는다 — 다른 사람과 함께 쓰는 저장소가 됐고, 머지 기록이 곧 배포 기록이다.
 - `main` 에 머지되면 Cloudflare Workers Builds 가 `bun run build` → `npx wrangler deploy`. 빌드 결과는 커밋의 check run `Workers Builds: feedback` 으로 확인한다. `bun run deploy` 는 수동 fallback.
 - **미리보기**: `main` 이 아닌 브랜치를 push 하면 Workers Builds 가 `bun run db:migrate:preview && bun run deploy:preview`(Workers Previews, `wrangler preview`)로 `https://<브랜치>.feedback-preview.dalestudy.com` 을 만든다. 모든 미리보기는 D1 `feedback-preview` 를 함께 쓴다 — 프로덕션 응답을 건드리지 않는 게 목적이다.
   - `wrangler.jsonc` 의 `previews` 블록에 D1 을 다시 선언한다(상속되지 않는다). 마이그레이션은 마이그레이션 전용 환경 `env.migrate-preview` 로 한다 — `previews` 블록의 D1 은 `d1 migrations apply` 가 찾지 못하고, `preview_database_id` 를 쓰면 로컬 개발까지 그 id 의 빈 DB 를 쓰게 된다.
@@ -43,7 +43,7 @@ bun run deploy:preview      # 지금 브랜치의 미리보기 수동 배포 (�
 
 ## Architecture
 
-**TanStack Start** on **Cloudflare Workers**, D1 + Drizzle, daleui. schedule 저장소와 같은 구성.
+**TanStack Start** on **Cloudflare Workers**, D1 + Drizzle, daleui.
 
 - `src/routes/` 파일 기반 라우팅. `login.tsx`, `auth.callback.tsx` 는 `server.handlers` 로 정의한 서버 라우트.
 - `src/routes/_authed.tsx` 는 미로그인 사용자를 `/login` 으로 보내는 UX 가드일 뿐이다. **보안 경계는 서버 함수의 `authMiddleware`** (`src/server/auth/middleware.ts`). 데이터를 만지는 서버 함수에는 전부 붙인다. 예외는 `getSurveyPreview` 하나 — 로그인 전 소개와 SNS 미리보기용으로 제목·설명·마감만 준다.
@@ -70,13 +70,11 @@ bun run deploy:preview      # 지금 브랜치의 미리보기 수동 배포 (�
 - **응답 고치기는 마감 전까지** (`submitResponse`). 응답 행을 새로 만들지 않고 답만 바꿔서 응답 수와 문항 잠금이 그대로다. 취소(삭제)는 두지 않는다 — 편집자가 이미 본 결과는 지워지지 않고, 마지막 응답이 사라지면 문항 잠금이 풀린다.
 - **SQLite 마이그레이션**: 기존 테이블에 NOT NULL 컬럼을 DEFAULT 없이 추가할 수 없다.
 - **TypeScript 7**: `baseUrl` 옵션이 사라졌다. `paths` 만 쓴다.
-- **`.dev.vars` 변경은 dev 서버 재시작 필요.**
 - **drizzle-kit 이 만든 SQLite rename/재생성 SQL 은 D1 에서 깨질 수 있다.** 트랜잭션 안의 `PRAGMA foreign_keys=OFF` 가 무시된다. 생성된 SQL 을 읽고 네이티브 `ALTER TABLE … RENAME` 으로 바꿔 쓴 적이 두 번 있다 (`0004`, `0006`). rename 프롬프트는 add/drop 두 마이그레이션으로 나눠도 된다.
 - **스키마 PR 은 머지 → 빌드 완료 확인 → `bun run db:migrate:remote` 를 바로.** 컬럼 추가는 코드보다 먼저 돌려도 되지만, 파괴적 마이그레이션은 새 코드가 배포된 뒤에 돌린다.
 - **Tailwind 의 base 레이어가 daleui 의 reset 레이어보다 뒤라** 그대로 두면 글꼴을 시스템 글꼴로 덮어쓴다. `src/styles.css` 의 `@theme` 에서 `--font-sans` 를 daleui 토큰으로 맞춘다.
 - **daleui `Link` 는 `className` 을 받으면 자기 스타일 클래스를 버린다.** 라우터가 활성 링크에 넘기는 `className: 'active'` 때문에 `AppLink` 는 `activeProps` 를 비운다. daleui 컴포넌트에 `className` 을 넘길 일이 있으면 같은 문제를 의심한다 (고침: daleui #1300).
 - **`--colors-bg-neutral` 은 라이트 테마에서 흰색이다.** 옅은 회색 면이 아니라 컴포넌트 기본 배경(`Card`·`TextInput` 바탕) 토큰이다 (daleui #363). 회색 면이 필요하면 테두리(`--colors-border-neutral`)로 구분한다. 회색 면 토큰은 daleui #1303.
-- 로컬에서 GitHub 로그인 없이 인증 흐름을 확인하려면 `users` 와 `sessions` 에 행을 직접 넣고 `Cookie: __Host-session=<id>` 로 요청한다.
 
 ## Deferred
 
@@ -89,4 +87,3 @@ bun run deploy:preview      # 지금 브랜치의 미리보기 수동 배포 (�
   - #1231 `asChild` — 버튼 모양 링크(`/login`, 홈 카드의 "피드백 남기기")를 토큰으로 흉내 낸다.
   - #1203 본문 `keep-all` — 한국어 본문을 감싸는 곳에 `break-keep` 을 준다.
   - #1302 `ghost`/`outline` 비활성 모양 — 쓸 수 없는 버튼은 숨긴다.
-- **Workers Builds watch paths** — 문서만 바뀐 커밋도 빌드가 돈다. `docs/**`, `*.md` 를 빼면 되지만 빌드가 1분이라 급하지 않다.
