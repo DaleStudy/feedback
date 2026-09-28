@@ -31,7 +31,7 @@ bun run deploy:preview      # 지금 브랜치의 미리보기 수동 배포 (�
 
 ## Deployment
 
-- 변경은 브랜치 → PR → 미리보기에서 확인 → squash merge. `main` 에 직접 push·force push 하지 않는다 — 다른 사람과 함께 쓰는 저장소가 됐고, 머지 기록이 곧 배포 기록이다. 머지하면 GitHub 이 브랜치를 지우고(`delete_branch_on_merge`), 브랜치가 지워지면 Workers Builds 가 그 미리보기도 지운다.
+- 변경은 브랜치 → PR → 미리보기에서 확인 → squash merge. `main` 에 직접 push·force push 하지 않는다 — 다른 사람과 함께 쓰는 저장소가 됐고, 머지 기록이 곧 배포 기록이다.
 - `main` 에 머지되면 Cloudflare Workers Builds 가 `bun run build` → `npx wrangler deploy`. 빌드 결과는 커밋의 check run `Workers Builds: feedback` 으로 확인한다. `bun run deploy` 는 수동 fallback.
 - **미리보기**: `main` 이 아닌 브랜치를 push 하면 Workers Builds 가 `bun run db:migrate:preview && bun run deploy:preview`(Workers Previews, `wrangler preview`)로 `https://<브랜치>.feedback-preview.dalestudy.com` 을 만든다. 모든 미리보기는 D1 `feedback-preview` 를 함께 쓴다 — 프로덕션 응답을 건드리지 않는 게 목적이다.
   - `wrangler.jsonc` 의 `previews` 블록에 D1 을 다시 선언한다(상속되지 않는다). 마이그레이션은 마이그레이션 전용 환경 `env.migrate-preview` 로 한다 — `previews` 블록의 D1 은 `d1 migrations apply` 가 찾지 못하고, `preview_database_id` 를 쓰면 로컬 개발까지 그 id 의 빈 DB 를 쓰게 된다.
