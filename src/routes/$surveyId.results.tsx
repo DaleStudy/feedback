@@ -4,25 +4,67 @@ import { Button, Heading, Icon, Tag, Text } from 'daleui'
 import { AppLink } from '@/components/AppLink'
 import { toCsv } from '@/lib/csv'
 import { dday, formatDeadline } from '@/lib/kst'
-import { pageHead } from '@/lib/seo'
+import { pageHead, summarize } from '@/lib/seo'
 import { average, share } from '@/questions/Distribution'
 import { QuestionResult, resultSection } from '@/questions/registry'
-import { getSurveyResults } from '@/server/functions/surveys'
+import { getSurveyPreview, getSurveyResults } from '@/server/functions/surveys'
 
-export const Route = createFileRoute('/_authed/$surveyId/results')({
-  loader: ({ params }) => getSurveyResults({ data: { surveyId: params.surveyId } }),
-  head: ({ loaderData, params }) =>
-    pageHead({ title: `결과 · ${loaderData?.title ?? ''}`, path: `/${params.surveyId}/results`, noindex: true }),
+// 로그인 가드(_authed) 밖에 둔다: 운영진끼리 결과 링크를 나눌 때 SNS 미리보기 봇이 제목·설명을 읽도록.
+// 결과를 볼 권한은 getSurveyResults 가 확인한다.
+export const Route = createFileRoute('/$surveyId/results')({
+  loader: async ({ params, context }) => ({
+    preview: await getSurveyPreview({ data: { surveyId: params.surveyId } }),
+    result: context.user ? await getSurveyResults({ data: { surveyId: params.surveyId } }) : null,
+  }),
+  head: ({ loaderData, params }) => {
+    if (!loaderData) return {}
+    const { preview } = loaderData
+    return pageHead({
+      title: `결과 · ${preview.title}`,
+      description: preview.description ? summarize(preview.description) : undefined,
+      path: `/${params.surveyId}/results`,
+      noindex: true,
+    })
+  },
   component: ResultsPage,
 })
 
 type Result = Awaited<ReturnType<typeof getSurveyResults>>
+type Preview = Awaited<ReturnType<typeof getSurveyPreview>>
 
 // 공통 문항 중 요약 카드와 구역 제목에 쓰는 이름. 이 key 가 없는 설문은 해당 카드가 빠진다.
 const NAMES: Record<string, string> = { recommend: '추천 의향', rejoin: '다시 참여', join_organizers: '운영진 관심' }
 
 function ResultsPage() {
-  const result = Route.useLoaderData()
+  const { preview, result } = Route.useLoaderData()
+  return result ? <Results result={result} /> : <GuestIntro preview={preview} />
+}
+
+// 로그인 전: 어떤 설문의 결과인지와 로그인 링크
+function GuestIntro({ preview }: { preview: Preview }) {
+  return (
+    <div className="mx-auto flex max-w-[560px] flex-col items-center gap-7 py-8 text-center break-keep md:py-16">
+      <div className="flex size-16 items-center justify-center rounded-full bg-[var(--colors-bg-brand)]">
+        <Icon name="eyeOff" size="lg" tone="brand" />
+      </div>
+      <div className="flex flex-col items-center gap-3">
+        <Heading level={1} size={2} align="center" wordBreak="cjk">
+          {preview.title} 결과
+        </Heading>
+        <Text tone="neutral">결과는 운영진과 이 설문의 편집자만 볼 수 있어요. GitHub로 로그인해 주세요.</Text>
+      </div>
+      {/* /login 은 서버 라우트라 라우터 링크가 아니라 평범한 링크로 간다 */}
+      <a
+        href={`/login?redirect=${encodeURIComponent(`/${preview.id}/results`)}`}
+        className="inline-flex h-12 items-center gap-1.5 rounded-[var(--radii-md)] bg-[var(--colors-bg-solid-brand)] px-6 text-lg font-semibold text-[var(--colors-fg-solid-brand)] no-underline hover:bg-[var(--colors-bg-solid-brand-hover)]"
+      >
+        <Icon name="GitHub" size="sm" /> GitHub로 로그인
+      </a>
+    </div>
+  )
+}
+
+function Results({ result }: { result: Result }) {
   const byKey = (key: string) => result.questions.find((q) => q.key === key)
 
   // 이름과 함께 받은 문항(identified)은 따로 모은다. 나머지는 유형이 정한 구역(숫자형·서술형)으로.

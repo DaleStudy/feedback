@@ -52,7 +52,7 @@ bun run deploy:preview      # 지금 브랜치의 미리보기 수동 배포 (�
 - 응답자는 `responses.user_id`. 익명 모드는 없다 — GitHub 로 로그인해 답하는 설문을 익명이라 믿는 사람은 드물고, 익명 분기(HMAC 키·잠금·안내 문구)의 비용이 컸다. 실명이 부담스럽다는 의견이 나오면 다시 넣는다. 대신 결과 화면(`getSurveyResults`)은 누가 참여했는지(이름순 명단, `invited` 설문은 아직 안 한 사람)만 주고 누가 무엇을 답했는지는 잇지 않는다 — 참여 독려에는 명단이 필요하지만 답과 이어지면 솔직한 피드백이 줄어든다. 예외는 `questions.identified` 문항(운영진 모집처럼 연락해야 하는 문항)뿐이다.
 - 문항 유형은 `src/questions/registry.tsx` 에 모여 있다. 검증(`validateAnswer`)·응답 UI(`QuestionInput`)·결과 UI(`QuestionResult`, 숫자형/서술형 구역 `resultSection`)·응답 화면의 동작(자동 넘김·조작 안내 `questionBehavior`, 예상 시간 `estimateMinutes`)은 전부 registry 를 거친다. 유형별 `switch` 를 다른 곳에 만들지 않는다.
 - 응답 화면(`/$surveyId`)과 편집 화면(`/$surveyId/edit`)은 `staticData: { bare: true }` 로 사이트 헤더 없이 화면 전체를 쓴다 (`__root.tsx` 가 읽는다).
-- 응답 화면은 로그인 가드(`_authed`) 밖에 있다. 로그인 전에는 소개와 로그인 링크를 보여 주고, SNS 미리보기 봇도 제목·설명을 읽는다. 링크 미리보기가 뜨려면 이 라우트를 가드 안으로 옮기면 안 된다.
+- 응답 화면(`/$surveyId`)과 결과 화면(`/$surveyId/results`)은 로그인 가드(`_authed`) 밖에 있다. 로그인 전에는 `getSurveyPreview` 로 소개와 로그인 링크를 보여 주고, SNS 미리보기 봇도 제목·설명을 읽는다. 링크 미리보기가 뜨려면 이 라우트들을 가드 안으로 옮기면 안 된다 — 결과 링크도 운영진끼리 채팅에 나누기 때문이다.
 - 메타 태그는 `src/lib/seo.ts` 의 `pageHead` 로. OG 이미지·트위터 카드 같은 공통 값은 `__root.tsx`, 페이지는 제목·설명·주소·`noindex` 만 정한다. 검색에 나오는 건 홈뿐이다. 정적 파일(`og.jpg`, `favicon.svg`)은 `public/`.
 - 화면은 daleui 컴포넌트로 짠다. 라우터 이동이 필요한 링크는 `src/components/AppLink.tsx`(daleui `Link` + `createLink`). 색·간격은 `var(--colors-…)`, `var(--spacing-…)` 토큰.
 - 화면 용어: 만들고·지우고·마감되는 양식은 **설문**, 참가자가 남기는 내용은 **피드백** ("피드백을 남기다", 사이트 이름). 코드·DB·URL 은 `survey`.
