@@ -47,25 +47,13 @@ jobs:
           packageManager: bun
           command: preview --name pr-${{ github.event.pull_request.number }} --secrets-file ${{ runner.temp }}/secrets.env
 
-      - name: Render comment
-        if: always()
-        env:
-          STATUS: ${{ steps.preview.outcome == 'success' && '✅ Ready' || '❌ Failed' }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PREVIEW_URL: <a href='https://pr-${{ github.event.pull_request.number }}.feedback-preview.dalestudy.com'>Preview URL</a>
-        run: |
-          SHORT_SHA="${HEAD_SHA::8}"
-          NOW="$(date -u '+%b %d %Y, %I:%M %p')"
-          export SHORT_SHA NOW
-          envsubst < .github/preview-comment.md > comment.md
-
       - name: Comment
         if: always()
         uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: cloudflare-workers
-          path: comment.md
+          message: |
+            ${{ steps.preview.outcome == 'success' && '✅' || '❌' }} 미리보기: https://pr-${{ github.event.pull_request.number }}.feedback-preview.dalestudy.com · [실행 로그](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
   cleanup:
     if: >
