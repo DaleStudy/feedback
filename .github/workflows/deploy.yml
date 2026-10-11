@@ -1,0 +1,36 @@
+name: Deploy 🚀
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run build
+
+      - name: Write secrets file
+        env:
+          GITHUB_CLIENT_SECRET: ${{ secrets.APP_CLIENT_SECRET }}
+        run: printf 'GITHUB_CLIENT_SECRET=%s\n' "$GITHUB_CLIENT_SECRET" > "$RUNNER_TEMP/secrets.env"
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          packageManager: bun
+          command: deploy --secrets-file ${{ runner.temp }}/secrets.env
