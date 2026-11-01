@@ -46,13 +46,29 @@ export function SurveyBuilder({ items, onChange, vars, locked }: Props) {
   }
 
   const replace = (patch: Partial<BuilderItem>) => onChange(items.map((q, i) => (i === index ? ({ ...q, ...patch } as BuilderItem) : q)))
-  const move = (delta: number) => {
+  // from 번째 문항을 옮겨 to 번째가 되게 한다. 선택은 옮기기 전에 고르던 문항을 따라간다.
+  const moveTo = (from: number, to: number) => {
+    if (from === to) return
     const next = [...items]
-    const [q] = next.splice(index, 1)
-    next.splice(index + delta, 0, q)
+    const [q] = next.splice(from, 1)
+    next.splice(to, 0, q)
     onChange(next)
-    setSelected(index + delta)
+    setSelected(next.indexOf(items[index]))
   }
+
+  // 끌기: dragFrom 은 끄는 문항, dropAt 은 놓일 틈(0 = 첫 문항 위, items.length = 마지막 아래)
+  const [dragFrom, setDragFrom] = useState<number | null>(null)
+  const [dropAt, setDropAt] = useState<number | null>(null)
+  const endDrag = () => {
+    setDragFrom(null)
+    setDropAt(null)
+  }
+  const drop = () => {
+    if (dragFrom !== null && dropAt !== null) moveTo(dragFrom, dropAt > dragFrom ? dropAt - 1 : dropAt)
+    endDrag()
+  }
+  // 제자리(끄는 문항 바로 위·아래 틈)에는 선을 그리지 않는다
+  const showLineAt = (gap: number) => dragFrom !== null && dropAt === gap && gap !== dragFrom && gap !== dragFrom + 1
   const usedKeys = new Set(items.flatMap((q) => (q.key !== undefined ? [q.key] : [])))
   const addCommon = (keys: string[]) => {
     const added = keys
@@ -75,11 +91,37 @@ export function SurveyBuilder({ items, onChange, vars, locked }: Props) {
         aria-label="문항 목록"
         className={`${detail ? 'hidden' : 'flex'} w-full shrink-0 flex-col bg-[var(--colors-bg-neutral-hover)] lg:flex lg:w-[340px] lg:border-r lg:border-[var(--colors-border-neutral)]`}
       >
-        <ol className="flex grow flex-col gap-1 overflow-auto p-3">
+        {/* 놓기는 목록 전체에서 받는다 — 문항 사이 틈에 놓아도 마지막으로 가리킨 자리로 간다 */}
+        <ol
+          className="flex grow flex-col gap-1 overflow-auto p-3"
+          onDragOver={(e) => dragFrom !== null && e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault()
+            drop()
+          }}
+        >
           {items.map((q, i) => {
             const v = view(q)
             return (
-              <li key={q.uid}>
+              <li
+                key={q.uid}
+                draggable={!locked}
+                onDragStart={(e) => {
+                  e.dataTransfer.effectAllowed = 'move'
+                  // Firefox 는 데이터가 없으면 끌기를 시작하지 않는다
+                  e.dataTransfer.setData('text/plain', String(i + 1))
+                  setDragFrom(i)
+                }}
+                onDragOver={(e) => {
+                  if (dragFrom === null) return
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  setDropAt(e.clientY < rect.top + rect.height / 2 ? i : i + 1)
+                }}
+                onDragEnd={endDrag}
+                className={`relative ${dragFrom === i ? 'opacity-40' : ''}`}
+              >
+                {showLineAt(i) && <DropLine edge="top" />}
+                {i === items.length - 1 && showLineAt(items.length) && <DropLine edge="bottom" />}
                 <button
                   type="button"
                   aria-current={i === index}
@@ -87,7 +129,7 @@ export function SurveyBuilder({ items, onChange, vars, locked }: Props) {
                     setSelected(i)
                     setDetail(true)
                   }}
-                  className={`flex w-full cursor-pointer gap-3 rounded-[var(--radii-md)] border p-3 text-left ${
+                  className={`flex w-full gap-3 rounded-[var(--radii-md)] border p-3 text-left ${locked ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'} ${
                     i === index ? 'border-[var(--colors-border-brand)] bg-[var(--colors-app-bg)]' : 'border-transparent bg-transparent'
                   }`}
                 >
@@ -196,12 +238,12 @@ export function SurveyBuilder({ items, onChange, vars, locked }: Props) {
               <div className="mt-auto flex gap-2">
                 {/* 쓸 수 없는 이동 버튼은 회색으로 두지 않고 숨긴다 */}
                 {index > 0 && (
-                  <Button tone="neutral" variant="outline" size="sm" onClick={() => move(-1)}>
+                  <Button tone="neutral" variant="outline" size="sm" onClick={() => moveTo(index, index - 1)}>
                     위로
                   </Button>
                 )}
                 {index < items.length - 1 && (
-                  <Button tone="neutral" variant="outline" size="sm" onClick={() => move(1)}>
+                  <Button tone="neutral" variant="outline" size="sm" onClick={() => moveTo(index, index + 1)}>
                     아래로
                   </Button>
                 )}
@@ -231,6 +273,11 @@ export function SurveyBuilder({ items, onChange, vars, locked }: Props) {
       )}
     </div>
   )
+}
+
+// 끌어 놓을 자리. 목록의 gap-1(4px) 틈 한가운데에 선을 긋는다.
+function DropLine({ edge }: { edge: 'top' | 'bottom' }) {
+  return <div aria-hidden className={`pointer-events-none absolute inset-x-1 h-0.5 rounded-full bg-[var(--colors-border-brand)] ${edge === 'top' ? '-top-[3px]' : '-bottom-[3px]'}`} />
 }
 
 // 실제 응답 화면과 같은 입력(registry 의 QuestionInput)을 그대로 그린다. 눌러 볼 수 있지만 저장되지 않는다.
