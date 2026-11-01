@@ -92,8 +92,14 @@ describe('resolveQuestions', () => {
     expect(help.required).toBe(false)
   })
 
-  test('vars 없이 공통 문항을 넣으면 실패한다', () => {
-    expect(() => resolveQuestions([{ key: 'goal_achieved' }], null)).toThrow('vars')
+  test('vars 없이는 {…} 자리가 있는 공통 문항만 실패하고, 몇 번 문항인지 알려준다', () => {
+    expect(() => resolveQuestions([{ key: 'survey_feedback' }, { key: 'goal_achieved' }], null)).toThrow('2번 공통 문항')
+  })
+
+  test('{…} 자리가 없는 공통 문항은 vars 없이도 넣을 수 있다', () => {
+    const [q] = resolveQuestions([{ key: 'survey_feedback' }], null)
+    expect(q.key).toBe('survey_feedback')
+    expect(q.label).toBe('헷갈렸던 문항이나 다음 설문에서 더 물어봤으면 하는 게 있었다면 알려주세요.')
   })
 
   test('없는 key, 겹치는 key 는 실패한다', () => {

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Button, Checkbox, Heading, Icon, Select, Tag, Text, TextInput } from 'daleui'
 import { type QuestionConfig, type QuestionType, questionTypes } from '@/db/schema'
-import { type Audience, type CommonVars, commonQuestions, commonQuestionsFor, renderLabel } from '@/questions/common'
+import { type Audience, type CommonVars, commonQuestions, commonQuestionsFor, hasPlaceholders, renderLabel } from '@/questions/common'
 import { QuestionConfigEditor, QuestionInput, questionTypeName } from '@/questions/registry'
 import type { QuestionInput as QuestionItem } from '@/server/survey-input'
 
@@ -222,9 +222,9 @@ export function SurveyBuilder({ items, onChange, vars, locked }: Props) {
                 value={view(item).label}
                 readOnly
                 helperText={
-                  varsComplete
-                    ? '공통 문항 문구는 고칠 수 없어요 — 설문끼리 비교하려고 고정해 뒀어요'
-                    : '설정 탭의 공통 문항 변수를 채우면 {…} 자리가 채워져요'
+                  hasPlaceholders(view(item).label)
+                    ? '설정 탭의 공통 문항 변수를 채우면 {…} 자리가 채워져요'
+                    : '공통 문항 문구는 고칠 수 없어요 — 설문끼리 비교하려고 고정해 뒀어요'
                 }
               />
             ) : (

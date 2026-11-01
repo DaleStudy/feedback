@@ -96,6 +96,9 @@ function particleAfter(word: string, written: string) {
   return (code - 0xac00) % 28 === 0 ? withoutFinal : withFinal
 }
 
+// vars 가 있어야 완성되는 문구인가
+export const hasPlaceholders = (label: string) => /\{\w+\}/.test(label)
+
 export function renderLabel(label: string, vars: CommonVars) {
   return label.replace(/\{(\w+)\}([을를이가은는과와])?/g, (_, name: string, particle?: string) => {
     if (!(name in vars)) throw new Error(`공통 문항의 {${name}} 에 해당하는 vars 값이 없습니다`)
