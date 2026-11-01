@@ -18,7 +18,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write
+    # 미리보기 주소는 GitHub 배포(previews 환경)로 PR에 표시된다
+    environment:
+      name: previews
+      url: ${{ steps.preview.outputs.preview-url }}
     steps:
       - uses: actions/checkout@v7
 
@@ -46,14 +49,6 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           packageManager: bun
           command: preview --name pr-${{ github.event.pull_request.number }} --secrets-file ${{ runner.temp }}/secrets.env
-
-      - name: Comment
-        if: always()
-        uses: marocchino/sticky-pull-request-comment@v3
-        with:
-          header: cloudflare-workers
-          message: |
-            ${{ steps.preview.outcome == 'success' && '✅' || '❌' }} 미리보기: https://pr-${{ github.event.pull_request.number }}.feedback-preview.dalestudy.com · [실행 로그](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
   cleanup:
     if: >
