@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid'
 import { type QuestionConfig, type QuestionType, type Visibility, questionTypes, visibilities } from '@/db/schema'
-import { type CommonVars, commonQuestions, renderLabel } from '@/questions/common'
+import { type CommonVars, commonQuestions, hasPlaceholders, renderLabel } from '@/questions/common'
 import { validateConfig } from '@/questions/registry'
 
 // 편집 UI 와 seed 가 보내는 설문·문항 입력을 DB 행으로 바꾸고 검사하는 순수 함수.
@@ -93,12 +93,12 @@ export function resolveQuestions(items: QuestionInput[], vars: CommonVars | null
       if (!base) throw new Error(`공통 문항이 없습니다: ${item.key}`)
       if (seen.has(base.key)) throw new Error(`공통 문항이 겹칩니다: ${base.key}`)
       seen.add(base.key)
-      if (!vars) throw new Error('공통 문항을 넣으려면 변수(vars)를 먼저 채워주세요')
+      if (!vars && hasPlaceholders(base.label)) throw new Error(`${position}번 공통 문항을 넣으려면 설정 탭의 공통 문항 변수를 먼저 채워주세요`)
       return {
         position,
         key: base.key,
         type: base.type,
-        label: renderLabel(base.label, vars),
+        label: vars ? renderLabel(base.label, vars) : base.label,
         required: item.required ?? base.required ?? true,
         identified: base.identified ?? false,
         config: base.config ?? null,
