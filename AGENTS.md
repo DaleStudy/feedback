@@ -38,7 +38,7 @@ bun run deploy:preview      # 지금 브랜치의 미리보기 수동 배포 (�
   - `versions upload` 의 버전 URL 은 프로덕션 D1 을 써서 쓰지 않는다(`preview_urls` 도 끔).
   - 미리보기 시크릿도 배포할 때마다 `--secrets-file` 로 넣으므로 Previews base config 에는 시크릿을 두지 않는다.
 - 이미 설정된 것: D1 `feedback`·`feedback-preview`(APAC, id 는 `wrangler.jsonc`), org secret `CLOUDFLARE_API_TOKEN`·`APP_CLIENT_SECRET`, 커스텀 도메인(`wrangler.jsonc` 의 `routes`, 미리보기도 같은 도메인의 하위 도메인으로 받는다).
-- GitHub App 의 Callback URL 은 localhost, `https://feedback.dalestudy.com/auth/callback`, `https://feedback-preview.dalestudy.com/auth/callback` 셋. GitHub 은 콜백 URL 의 하위 도메인으로의 `redirect_uri` 도 받아서, 미리보기(`pr-<번호>.feedback.dalestudy.com`)는 운영 콜백 URL 로 통과한다. 앱은 **공개(public)** 여야 한다 — 비공개 앱은 소유 조직 멤버만 authorize 할 수 있어서 조직 밖 참가자가 GitHub 의 authorize 페이지에서 404 를 본다(우리 로그에는 안 남는다).
+- GitHub App 의 Callback URL 은 localhost, `https://feedback.dalestudy.com/auth/callback` 둘. 운영 콜백 URL 에는 **Allow wildcard matching** 을 켜 두어서, 미리보기(`pr-<번호>.feedback.dalestudy.com`)도 그 콜백으로 로그인한다. 끄면 미리보기 로그인이 GitHub 에서 redirect_uri 오류로 막힌다. 앱은 **공개(public)** 여야 한다 — 비공개 앱은 소유 조직 멤버만 authorize 할 수 있어서 조직 밖 참가자가 GitHub 의 authorize 페이지에서 404 를 본다(우리 로그에는 안 남는다).
 
 ## Architecture
 
