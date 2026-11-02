@@ -9,11 +9,8 @@
   "upload_source_maps": true,
   // GitHub App(dalestudy)의 Client ID. 로그인 URL에 그대로 드러나는 공개 값이다.
   "vars": { "GITHUB_CLIENT_ID": "Iv23liwu6Ob75w8NcAX9" },
-  "routes": [
-    { "pattern": "feedback.dalestudy.com", "custom_domain": true },
-    // 미리보기 전용 도메인: 프로덕션 트래픽은 받지 않는다(enabled: false)
-    { "pattern": "feedback-preview.dalestudy.com", "custom_domain": true, "previews_enabled": true, "enabled": false }
-  ],
+  // 운영 도메인이 미리보기도 받는다(previews_enabled). 미리보기는 그 하위 도메인에 뜬다.
+  "routes": [{ "pattern": "feedback.dalestudy.com", "custom_domain": true, "previews_enabled": true }],
   "d1_databases": [
     {
       "binding": "DB",
@@ -22,7 +19,7 @@
       "migrations_dir": "drizzle"
     }
   ],
-  // PR 미리보기(Workers Previews). 브랜치마다 <브랜치>.feedback-preview.dalestudy.com 에 뜬다.
+  // PR 미리보기(Workers Previews). PR마다 pr-<번호>.feedback.dalestudy.com 에 뜬다.
   // D1 은 미리보기끼리 함께 쓰는 feedback-preview 로 — 프로덕션 응답을 건드리지 않게.
   "previews": {
     "vars": { "GITHUB_CLIENT_ID": "Iv23liwu6Ob75w8NcAX9" },
